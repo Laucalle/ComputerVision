@@ -6,10 +6,24 @@ import pickle
 import os
 from sklearn import svm
 
+def norm_1(x):
+	norm = np.linalg.norm(x,0)
+	return x/norm if norm != 0 else x
+
+def norm_2(x):
+	norm = np.linalg.norm(x)
+	return x/norm if norm != 0 else x
+
+def norm_2_hys(x):
+	x = norm_2(x)
+	x[x > 0.2] = 0.2
+	return norm_2(x)
+
 # Step 1: Gradient
 
 def computeGradient(img, kx, ky):
 
+	print(img.shape)
 	img_x = cv2.sepFilter2D(img, cv2.CV_32F, kx, ky, borderType=cv2.BORDER_REPLICATE)
 	img_y = cv2.sepFilter2D(img, cv2.CV_32F, ky, kx, borderType=cv2.BORDER_REPLICATE)
 	mag, angle = cv2.cartToPolar(img_x, img_y,angleInDegrees=True)
@@ -85,19 +99,15 @@ def computeCellHistograms(border_size, magnitudes, angles, cell_size = 8, bins =
 
 # Step 3: Normalization
 
-def normalizeHistograms(histograms, block_size = 2, overlapping = 0.5):
+def normalizeHistograms(histograms, norm_f = norm_2, block_size = 2, overlapping = 0.5):
 	step = int(block_size*(1-overlapping))
 	normalized = []
 	for i in range(0,histograms.shape[0]-block_size+1, step):
 		for j in range(0,histograms.shape[1]-block_size+1, step):
-			norm = np.linalg.norm(histograms[i:i+block_size, j:j+block_size])
-			if norm == 0:
-				normalized.extend((histograms[i:i+block_size, j:j+block_size]).flatten())
-			else:
-				normalized.extend((histograms[i:i+block_size, j:j+block_size]/norm).flatten())
+			normalized.extend((norm_f(histograms[i:i+block_size, j:j+block_size].flatten())))
 	return np.asarray(normalized)
 
-def obtainTrainingData(deriv_kernel, pos_path, neg_path):
+def obtainTrainingData(deriv_kernel, pos_path, neg_path, norm_f = norm_2):
 	kx = deriv_kernel[0]
 	ky = deriv_kernel[1]
 
@@ -110,13 +120,15 @@ def obtainTrainingData(deriv_kernel, pos_path, neg_path):
 	i = 0
 
 	for name in pos_directory:
+		print(os.path.join(pos_path,name))
 		img = cv2.imread(os.path.join(pos_path, name))
+		print(img.shape)
 
 		magnitudes, angles = computeGradient(img, kx, ky)
 
 		border_size = (img.shape[0]-128) // 2
 		histograms = computeCellHistograms(border_size, magnitudes, angles, 8)
-		descriptor = normalizeHistograms(histograms)
+		descriptor = normalizeHistograms(histograms,norm_f=norm_f)
 		features[i,:] = descriptor
 		h.printProgressBar(i, features.shape[0])
 		i+=1
@@ -128,7 +140,7 @@ def obtainTrainingData(deriv_kernel, pos_path, neg_path):
 
 		border_size = (img.shape[0]-128) // 2
 		histograms = computeCellHistograms(border_size, magnitudes, angles, 8)
-		descriptor = normalizeHistograms(histograms)
+		descriptor = normalizeHistograms(histograms,norm_f=norm_f)
 		features[i,:] = descriptor
 		i+=1
 		h.printProgressBar(i, features.shape[0])
@@ -144,7 +156,7 @@ def extractNegativeWindows(path, dst_path):
 			c = random.randint(0,img.shape[1]-64)
 			cv2.imwrite(dst_path+"/"+str(i)+"_"+name, img[f:f+128,c:c+64])
 
-def extractHardExamples(path, deriv_kernel, classifier, stride = 8):
+def extractHardExamples(path, deriv_kernel, classifier, stride = 8, norm_f = norm_2):
 	n_examples = 1
 	for name in os.listdir(path):
 		img = cv2.imread(os.path.join(path, name))
@@ -162,7 +174,7 @@ def extractHardExamples(path, deriv_kernel, classifier, stride = 8):
 			histograms = computeCellHistograms(0,magnitudes,angles)
 			for i in range(0,level.shape[0]-2*margin_r+1,stride):
 				for j in range(0,level.shape[1]-2*margin_c+1,stride):
-					window_norm_histograms = normalizeHistograms(histograms[i:i+128,j:j+64])
+					window_norm_histograms = normalizeHistograms(histograms[i:i+128,j:j+64],norm_f=norm_f)
 					if classifier.predict(window_norm_histograms)[0] > 0:
 						cv2.imwrite("hard_examples/"+str(n_examples)+".png",histograms[i:i+128,j:j+64])
 
@@ -179,7 +191,7 @@ def main():
 	t0 = time.perf_counter()
 	features, labels = obtainTrainingData((kx,ky),pos_train_path,neg_train_path)
 	t1 = time.perf_counter()
-	print("Total: %.5f sec, %.5f" % (t1-t0, t1-t2))
+	print("Total: %.5f sec, %.5f each" % (t1-t0, (t1-t0)/labels.shape[0]))
 	pickle.dump(labels, open("labels.pk", "wb"))
 	pickle.dump(features, open("features.pk", "wb"))
 	#labels = pickle.load(open("labels.pk", "rb"))
