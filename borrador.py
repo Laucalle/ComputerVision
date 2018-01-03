@@ -98,7 +98,7 @@ def normalizeHistograms(histograms, block_size = 2, overlapping = 0.5):
 	return np.asarray(normalized)
 
 def obtainTrainingData(deriv_kernel, pos_path, neg_path):
-    kx = deriv_kernel[0]
+	kx = deriv_kernel[0]
 	ky = deriv_kernel[1]
 
 	pos_directory = os.listdir(pos_path)
@@ -133,7 +133,7 @@ def obtainTrainingData(deriv_kernel, pos_path, neg_path):
 		i+=1
 		h.printProgressBar(i, features.shape[0])
 
-    return features, labels
+	return features, labels
 
 # Warning: this function writes data to disk
 def extractNegativeWindows(path, classifier):
@@ -145,26 +145,26 @@ def extractNegativeWindows(path, classifier):
 			cv2.imwrite("training_negative_window/"+str(i)+"_"+name, img[f:f+128,c:c+64])
 
 def extractHardExamples(path, deriv_kernel, classifier, stride = 8):
-    n_examples = 1
+	n_examples = 1
 	for name in os.listdir(path):
 		img = cv2.imread(os.path.join(path, name))
-        dims = (img.shape[0]/1.2,img.shape[1]/1.2,img.shape[2])
-        pyramid = [img]
+		dims = (img.shape[0]/1.2,img.shape[1]/1.2,img.shape[2])
+		pyramid = [img]
 
-        while dims[0] > 128 and dims[1] > 64:
-            pyramid.append(cv2.pyrDown(src=pyramid[-1],dstsize=dims))
-            dims = (int(dims[0]/1.2),int(dims[1]/1.2),dims[2])
+		while dims[0] > 128 and dims[1] > 64:
+			pyramid.append(cv2.pyrDown(src=pyramid[-1],dstsize=dims))
+			dims = (int(dims[0]/1.2),int(dims[1]/1.2),dims[2])
 
-        for level in pyramid:
-            margin_r = int((dims[0] % 8) // 2)
-            margin_c = int((dims[1] % 8) // 2)
-            magnitudes, angles = computeGradient(level[margin_r:-margin_r,margin_c:-margin_c],*deriv_kernel)
-            histograms = computeCellHistograms(0,magnitudes,angles)
+		for level in pyramid:
+			margin_r = int((dims[0] % 8) // 2)
+			margin_c = int((dims[1] % 8) // 2)
+			magnitudes, angles = computeGradient(level[margin_r:-margin_r,margin_c:-margin_c],*deriv_kernel)
+			histograms = computeCellHistograms(0,magnitudes,angles)
 		    for i in range(0,level.shape[0]-2*margin_r+1,stride):
-                for j in range(0,level.shape[1]-2*margin_c+1,stride):
-                    window_norm_histograms = normalizeHistograms(histograms[i:i+128,j:j+64])
-                    if classifier.predict(window_norm_histograms)[0] > 0:
-                        cv2.imwrite("hard_examples/"+str(n_examples)+".png",histograms[i:i+128,j:j+64])
+				for j in range(0,level.shape[1]-2*margin_c+1,stride):
+					window_norm_histograms = normalizeHistograms(histograms[i:i+128,j:j+64])
+					if classifier.predict(window_norm_histograms)[0] > 0:
+						cv2.imwrite("hard_examples/"+str(n_examples)+".png",histograms[i:i+128,j:j+64])
 
 
 def main():
@@ -172,11 +172,11 @@ def main():
 	pos_train_path = "/home/laura/Documentos/VC/trabajo_final/INRIAPerson/96X160H96/Train/pos"
 	neg_train_path = "/home/laura/Documentos/VC/trabajo_final/INRIAPerson/96X160H96/Train/neg"
 
-    kx = np.asarray([[-1],[0],[1]])
-    ky = np.asarray([[0],[1],[0]])
+	kx = np.asarray([[-1],[0],[1]])
+	ky = np.asarray([[0],[1],[0]])
 
-    features, labels = obtainTrainingData((kx,ky),pos_train_path,neg_train_path)
-    pickle.dump(labels, open("labels.pk", "wb"))
+	features, labels = obtainTrainingData((kx,ky),pos_train_path,neg_train_path)
+	pickle.dump(labels, open("labels.pk", "wb"))
 	pickle.dump(features, open("features.pk", "wb"))
 	labels = pickle.load(open("labels.pk", "rb"))
 	features = pickle.load(open("features.pk", "rb"))
@@ -190,4 +190,4 @@ def main():
 	neg_directory = os.listdir(neg_train_path)
 
 if __name__ == "__main__":
-    main()
+	main()
