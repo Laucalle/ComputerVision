@@ -2,7 +2,9 @@ import numpy as np
 import cv2
 import time
 import helpers as h
-
+import pickle
+import os
+from sklearn import svm
 
 # Step 1: Gradient
 
@@ -90,20 +92,82 @@ def normalizeHistogram(histograms, block_size = 2, overlapping = 0.5):
 	normalized = []
 	for i in range(0,histograms.shape[0]-block_size+1, step):
 		for j in range(0,histograms.shape[1]-block_size+1, step):
-			print("%d %d" % (i,j))
 			norm = np.linalg.norm(histograms[i:i+block_size, j:j+block_size])
-			normalized.extend((histograms[i:i+block_size, j:j+block_size]/norm).flatten())
-	return normalized
+			if norm == 0:
+				normalized.extend((histograms[i:i+block_size, j:j+block_size]).flatten())
+			else:
+				normalized.extend((histograms[i:i+block_size, j:j+block_size]/norm).flatten())
+	return np.asarray(normalized)
 
-def main():
-	img = cv2.imread("crop001029a.png")
+
+# Warning: Esta función escribe en disco
+def obtainTrainingData():
 	ky = np.asarray([[0],[1],[0]])
 	kx = np.asarray([[-1],[0],[1]])
-	magnitud, angulo = computeGradient(img, kx, ky)
+
+	ruta_pos = "/home/laura/Documentos/VC/trabajo_final/INRIAPerson/96X160H96/Train/pos"
+	ruta_neg = "/home/laura/Documentos/VC/trabajo_final/INRIAPerson/96X160H96/Train/neg"
 	
-	border_size = (img.shape[0]-128) // 2
-	histograms = computeCellHistograms(border_size, magnitud, angulo, 8)
-	descriptor = normalizeHistogram(histograms)
+	
+	directorio_pos = os.listdir(ruta_pos) 
+	directorio_neg = os.listdir(ruta_neg) 
+
+	long_descriptor = (15*7)*(4*9)
+	caracteristicas = np.zeros((len(directorio_pos) + len(directorio_neg), long_descriptor))
+	etiquetas = np.repeat(np.asarray([1,0]), [len(directorio_pos),len(directorio_neg)])
+	i = 0
+
+	for name in directorio_pos:
+		img = cv2.imread(os.path.join(ruta_pos, name))
+
+		magnitud, angulo = computeGradient(img, kx, ky)
+	
+		border_size = (img.shape[0]-128) // 2
+		histograms = computeCellHistograms(border_size, magnitud, angulo, 8)
+		descriptor = normalizeHistogram(histograms)
+		caracteristicas[i,:]=descriptor
+		h.printProgressBar(i, caracteristicas.shape[0])
+		i+=1
+
+
+	for name in directorio_neg:
+		img = cv2.imread(os.path.join(ruta_neg, name))
+
+		magnitud, angulo = computeGradient(img, kx, ky)
+	
+		border_size = (img.shape[0]-128) // 2
+		histograms = computeCellHistograms(border_size, magnitud, angulo, 8)
+		descriptor = normalizeHistogram(histograms)
+		caracteristicas[i,:]=descriptor
+		i+=1
+		h.printProgressBar(i, caracteristicas.shape[0])
+
+	pickle.dump(etiquetas, open("etiquetas.pk", "wb"))
+	pickle.dump(caracteristicas, open("caracteristicas.pk", "wb"))
+
+def main():
+	etiquetas = pickle.load(open("etiquetas.pk", "rb"))
+	caracteristicas = pickle.load(open("caracteristicas.pk", "rb"))
+
+	classifier = svm.LinearSVC()
+	classifier.fit(caracteristicas, etiquetas)
+	predicciones = classifier.predict(caracteristicas)
+
+	aciertos = np.sum(np.equal(predicciones,etiquetas))
+	print("Porcentaje de acierto Train: %.4f" % (aciertos/predicciones.shape[0]))
+	ruta_neg = "/home/laura/Documentos/VC/trabajo_final/INRIAPerson/96X160H96/Train/neg"
+	directorio_neg = os.listdir(ruta_neg) 
+
+
+# WARNING: escribe en disco
+def extractHardExamples(ruta, clasificador):
+	for name in os.listdir(ruta):
+		img = cv2.imread(os.path.join(ruta, name))
+		for 
+		for i in range(10):
+			f = random.randint(0,img.shape[0]-128)
+			c = random.randint(0,img.shape[1]-64)
+			cv2.imwrite("training_negative_window/"+str(i)+"_"+name, img[f:f+128,c:c+64])
 
 if __name__ == "__main__":
     main()
