@@ -136,13 +136,13 @@ def obtainTrainingData(deriv_kernel, pos_path, neg_path):
 	return features, labels
 
 # Warning: this function writes data to disk
-def extractNegativeWindows(path, classifier):
+def extractNegativeWindows(path, dst_path):
 	for name in os.listdir(path):
 		img = cv2.imread(os.path.join(path, name))
 		for i in range(10):
 			f = random.randint(0,img.shape[0]-128)
 			c = random.randint(0,img.shape[1]-64)
-			cv2.imwrite("training_negative_window/"+str(i)+"_"+name, img[f:f+128,c:c+64])
+			cv2.imwrite(dst_path+"/"+str(i)+"_"+name, img[f:f+128,c:c+64])
 
 def extractHardExamples(path, deriv_kernel, classifier, stride = 8):
 	n_examples = 1
@@ -160,7 +160,7 @@ def extractHardExamples(path, deriv_kernel, classifier, stride = 8):
 			margin_c = int((dims[1] % 8) // 2)
 			magnitudes, angles = computeGradient(level[margin_r:-margin_r,margin_c:-margin_c],*deriv_kernel)
 			histograms = computeCellHistograms(0,magnitudes,angles)
-		    for i in range(0,level.shape[0]-2*margin_r+1,stride):
+			for i in range(0,level.shape[0]-2*margin_r+1,stride):
 				for j in range(0,level.shape[1]-2*margin_c+1,stride):
 					window_norm_histograms = normalizeHistograms(histograms[i:i+128,j:j+64])
 					if classifier.predict(window_norm_histograms)[0] > 0:
@@ -169,17 +169,21 @@ def extractHardExamples(path, deriv_kernel, classifier, stride = 8):
 
 def main():
 
-	pos_train_path = "/home/laura/Documentos/VC/trabajo_final/INRIAPerson/96X160H96/Train/pos"
-	neg_train_path = "/home/laura/Documentos/VC/trabajo_final/INRIAPerson/96X160H96/Train/neg"
+	pos_train_path = "../INRIAPerson/96X160H96/Train/pos"
+	neg_train_path = "../INRIAPerson/96X160H96/Train/neg"
 
 	kx = np.asarray([[-1],[0],[1]])
 	ky = np.asarray([[0],[1],[0]])
 
+	#extractNegativeWindows("../INRIAPerson/Train/neg", neg_train_path)
+	t0 = time.perf_counter()
 	features, labels = obtainTrainingData((kx,ky),pos_train_path,neg_train_path)
+	t1 = time.perf_counter()
+	print("Total: %.5f sec, %.5f" % (t1-t0, t1-t2))
 	pickle.dump(labels, open("labels.pk", "wb"))
 	pickle.dump(features, open("features.pk", "wb"))
-	labels = pickle.load(open("labels.pk", "rb"))
-	features = pickle.load(open("features.pk", "rb"))
+	#labels = pickle.load(open("labels.pk", "rb"))
+	#features = pickle.load(open("features.pk", "rb"))
 
 	classifier = svm.LinearSVC()
 	classifier.fit(features, labels)
