@@ -23,7 +23,6 @@ def norm_2_hys(x):
 
 def computeGradient(img, kx, ky):
 
-	print(img.shape)
 	img_x = cv2.sepFilter2D(img, cv2.CV_32F, kx, ky, borderType=cv2.BORDER_REPLICATE)
 	img_y = cv2.sepFilter2D(img, cv2.CV_32F, ky, kx, borderType=cv2.BORDER_REPLICATE)
 	mag, angle = cv2.cartToPolar(img_x, img_y,angleInDegrees=True)
@@ -47,7 +46,7 @@ def computeGradient(img, kx, ky):
 	#t3 = time.perf_counter()
 	indices = np.apply_along_axis(np.argmax, 2, mag)
 	angles = angle[coord_0, coord_1, indices.flatten()]
-	angles = angulo.reshape(img.shape[:2])
+	angles = angles.reshape(img.shape[:2])
 	#t4 = time.perf_counter()
 
 	del mag
@@ -120,9 +119,7 @@ def obtainTrainingData(deriv_kernel, pos_path, neg_path, norm_f = norm_2):
 	i = 0
 
 	for name in pos_directory:
-		print(os.path.join(pos_path,name))
 		img = cv2.imread(os.path.join(pos_path, name))
-		print(img.shape)
 
 		magnitudes, angles = computeGradient(img, kx, ky)
 
@@ -188,12 +185,13 @@ def main():
 	ky = np.asarray([[0],[1],[0]])
 
 	#extractNegativeWindows("../INRIAPerson/Train/neg", neg_train_path)
+	
 	t0 = time.perf_counter()
 	features, labels = obtainTrainingData((kx,ky),pos_train_path,neg_train_path)
 	t1 = time.perf_counter()
-	print("Total: %.5f sec, %.5f each" % (t1-t0, (t1-t0)/labels.shape[0]))
+	print("Total L2:    %.5f sec, %.5f each" % (t1-t0, (t1-t0)/labels.shape[0]))
 	pickle.dump(labels, open("labels.pk", "wb"))
-	pickle.dump(features, open("features.pk", "wb"))
+	pickle.dump(features, open("features_l2.pk", "wb"))
 	#labels = pickle.load(open("labels.pk", "rb"))
 	#features = pickle.load(open("features.pk", "rb"))
 
@@ -203,7 +201,40 @@ def main():
 
 	correct_answers = np.sum(np.equal(predictions,labels))
 	print("Training accuracy: %.4f" % (correct_answers/predictions.shape[0]))
-	neg_directory = os.listdir(neg_train_path)
+	pickle.dump(classifier, open("classifier_l2.pk","wb"))
+
+	t0 = time.perf_counter()
+	features, labels = obtainTrainingData((kx,ky),pos_train_path,neg_train_path, norm_1)
+	t1 = time.perf_counter()
+	print("Total L1:     %.5f sec, %.5f each" % (t1-t0, (t1-t0)/labels.shape[0]))
+	pickle.dump(features, open("features_l1.pk", "wb"))
+	#labels = pickle.load(open("labels.pk", "rb"))
+	#features = pickle.load(open("features.pk", "rb"))
+
+	classifier.fit(features, labels)
+	predictions = classifier.predict(features)
+
+	correct_answers = np.sum(np.equal(predictions,labels))
+	print("Training accuracy: %.4f" % (correct_answers/predictions.shape[0]))
+	pickle.dump(classifier, open("classifier_l1.pk","wb"))
+
+
+
+	t0 = time.perf_counter()
+	features, labels = obtainTrainingData((kx,ky),pos_train_path,neg_train_path, norm_2_hys)
+	t1 = time.perf_counter()
+	print("Total L2-Hys: %.5f sec, %.5f each" % (t1-t0, (t1-t0)/labels.shape[0]))
+	pickle.dump(features, open("features_l2_hys.pk", "wb"))
+	#labels = pickle.load(open("labels.pk", "rb"))
+	#features = pickle.load(open("features.pk", "rb"))
+
+	classifier.fit(features, labels)
+	predictions = classifier.predict(features)
+
+	correct_answers = np.sum(np.equal(predictions,labels))
+	print("Training accuracy: %.4f" % (correct_answers/predictions.shape[0]))
+	pickle.dump(classifier, open("classifier_l2_hys.pk","wb"))
+
 
 if __name__ == "__main__":
 	main()
