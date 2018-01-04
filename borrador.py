@@ -172,9 +172,38 @@ def extractHardExamples(path, deriv_kernel, classifier, stride = 8, norm_f = nor
 			for i in range(0,level.shape[0]-2*margin_r+1,stride):
 				for j in range(0,level.shape[1]-2*margin_c+1,stride):
 					window_norm_histograms = normalizeHistograms(histograms[i:i+128,j:j+64],norm_f=norm_f)
-					if classifier.predict(window_norm_histograms)[0] > 0:
+					if classifier.predict(window_norm_histograms)[0] > 0.5:
 						cv2.imwrite("hard_examples/"+str(n_examples)+".png",histograms[i:i+128,j:j+64])
 
+def scanForPedestrians(img,classifier,draw_window=False):
+
+	dims = (img.shape[0]/1.2,img.shape[1]/1.2,img.shape[2])
+	pyramid = [img]
+
+	while dims[0] > 128 and dims[1] > 64:
+		pyramid.append(cv2.pyrDown(src=pyramid[-1],dstsize=dims))
+		dims = (int(dims[0]/1.2),int(dims[1]/1.2),dims[2])
+
+	scale = 1
+	if draw_window:
+		canvas = np.copy(img)
+	for level in pyramid:
+		margin_r = int((dims[0] % 8) // 2)
+		margin_c = int((dims[1] % 8) // 2)
+		magnitudes, angles = computeGradient(level[margin_r:-margin_r,margin_c:-margin_c],*deriv_kernel)
+		histograms = computeCellHistograms(0,magnitudes,angles)
+		for i in range(0,level.shape[0]-2*margin_r+1,stride):
+			for j in range(0,level.shape[1]-2*margin_c+1,stride):
+				window_norm_histograms = normalizeHistograms(histograms[i:i+128,j:j+64],norm_f=norm_f)
+				if classifier.predict(window_norm_histograms)[0] > 0.5:
+					if draw_window:
+						canvas = cv2.rectangle(canvas,(i*scale,j*scale),((i+128)*scale,(j+64)*scale),(255,0,0))
+					else:
+						return True
+
+		scale *= 1.2
+
+	return canvas
 
 def main():
 
