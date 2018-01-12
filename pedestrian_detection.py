@@ -165,7 +165,7 @@ def extractHardExamples(path, deriv_kernel, classifier, stride = 8, norm_f = nor
 					if classifier.predict(window_norm_histograms)[0] > 0.5:
 						cv2.imwrite("hard_examples/"+str(n_examples)+".png",histograms[i:i+128,j:j+64])
 
-def scanForPedestrians(img,list_classifiers, simple_classiffier,deriv_kernel,norm_f,draw_window=False, stride = 8):
+def scanForPedestrians(img,list_classifiers, simple_classiffier,deriv_kernel,norm_f, stride = 8):
 
 	dims = (int(img.shape[1]//1.2),int(img.shape[0]//1.2))
 	pyramid = [img]
@@ -187,7 +187,6 @@ def scanForPedestrians(img,list_classifiers, simple_classiffier,deriv_kernel,nor
 		margin_ec = int((level.shape[1] % 8) - margin_c)
 
 		magnitudes, angles = computeGradient(level[margin_r:level.shape[0]-margin_er,margin_c:level.shape[1]-margin_ec],*deriv_kernel)
-
 		histograms = computeCellHistograms(0,magnitudes,angles)
 		if draw_window:
 			minicanvas = np.copy(level)
@@ -196,27 +195,15 @@ def scanForPedestrians(img,list_classifiers, simple_classiffier,deriv_kernel,nor
 			for j in range(0,histograms.shape[1]-7):
 				window_norm_histograms = normalizeHistograms(histograms[i:i+16,j:j+8],norm_f=norm_f)
 				prob = simple_classiffier.predict_proba([window_norm_histograms])
-
 				if prob[0,1] > 0.8:
-					#confidence = classifier.decision_function([window_norm_histograms])[0]
 					confidence = heavy_classifier([window_norm_histograms], list_classifiers)
-					if confidence>0.5:
-						if draw_window:
-							canvas = cv2.rectangle(canvas,(int(j*8*scale),int(i*8*scale)),(int((j*8+64)*scale),int((i*8+128)*scale)),(255,0,0))
-						#	minicanvas = cv2.rectangle(minicanvas, (int(j*8), int(i*8)), (int(j*8+64), int(i*8+128)), (255,0,0))
+					if confidence > 0.5:
 						windows.append(np.array([j*8*scale,i*8*scale,(j*8+64)*scale, (i*8+128)*scale, confidence])) # coordinates x,y
 
 		scale *= 1.2
 
-	print("Starting non maximum suppression ...")
 	new_windows = non_maximum_suppression(np.asarray(windows), 0.3)
-	new_canvas = np.copy(img)
-	for win in new_windows:
-		new_canvas = cv2.rectangle(new_canvas,(int(win[0]),int(win[1])),(int(win[2]),int(win[3])),(0,255,0))
-
-	#if draw_window:
-	#	h.showMatrix(minicanvas_list, [str(i) for i in range(len(minicanvas_list))], grey = False)
-	return canvas, new_canvas
+	return new_windows
 
 def non_maximum_suppression(windows, overlap_threshold):
 	if not len(windows):
@@ -267,7 +254,7 @@ def train_classifier_set(features_yes, features_no, n):
 		classifiers.append(c)
 	return classifiers
 
-def scanForPedestriansSimple(img,classifier,deriv_kernel,norm_f,draw_window=False, stride = 8):
+def scanForPedestriansSimple(img,classifier,deriv_kernel,norm_f,stride = 8):
 
 	dims = (int(img.shape[1]//1.2),int(img.shape[0]//1.2))
 	pyramid = [img]
@@ -279,7 +266,7 @@ def scanForPedestriansSimple(img,classifier,deriv_kernel,norm_f,draw_window=Fals
 		dims = (int(dims[0]//1.2),int(dims[1]//1.2))
 
 	scale = 1
-	
+
 	for level in pyramid:
 		margin_r = int((level.shape[0] % 8) // 2)
 		margin_er = int((level.shape[0] % 8) - margin_r)
@@ -287,12 +274,11 @@ def scanForPedestriansSimple(img,classifier,deriv_kernel,norm_f,draw_window=Fals
 		margin_ec = int((level.shape[1] % 8) - margin_c)
 
 		magnitudes, angles = computeGradient(level[margin_r:level.shape[0]-margin_er,margin_c:level.shape[1]-margin_ec],*deriv_kernel)
-
 		histograms = computeCellHistograms(0,magnitudes,angles)
-		
+
 		for i in range(0,histograms.shape[0]-15):
 			for j in range(0,histograms.shape[1]-7):
-				window_norm_histograms = normalizeHistograms(histograms[i:i+16,j:j+8],norm_f=norm_f)		
+				window_norm_histograms = normalizeHistograms(histograms[i:i+16,j:j+8],norm_f=norm_f)
 
 				if classifier.predict([window_norm_histograms])[0]:
 					windows.append(np.array([j*8*scale,i*8*scale,(j*8+64)*scale, (i*8+128)*scale, confidence])) # coordinates x,y
@@ -301,7 +287,7 @@ def scanForPedestriansSimple(img,classifier,deriv_kernel,norm_f,draw_window=Fals
 
 	return windows
 
-def scanForPedestriansNMS(img,classifier,deriv_kernel,norm_f,draw_window=False, stride = 8):
+def scanForPedestriansNMS(img,classifier,deriv_kernel,norm_f,stride = 8):
 
 	dims = (int(img.shape[1]//1.2),int(img.shape[0]//1.2))
 	pyramid = [img]
@@ -321,7 +307,6 @@ def scanForPedestriansNMS(img,classifier,deriv_kernel,norm_f,draw_window=False, 
 		margin_ec = int((level.shape[1] % 8) - margin_c)
 
 		magnitudes, angles = computeGradient(level[margin_r:level.shape[0]-margin_er,margin_c:level.shape[1]-margin_ec],*deriv_kernel)
-
 		histograms = computeCellHistograms(0,magnitudes,angles)
 
 		for i in range(0,histograms.shape[0]-15):
@@ -334,10 +319,9 @@ def scanForPedestriansNMS(img,classifier,deriv_kernel,norm_f,draw_window=False, 
 		scale *= 1.2
 
 	new_windows = non_maximum_suppression(np.asarray(windows), 0.3)
-	
 	return new_windows
 
-def scanForPedestriansNMS_votes(img,list_classifiers,deriv_kernel,norm_f,draw_window=False, stride = 8):
+def scanForPedestriansNMS_votes(img,list_classifiers,deriv_kernel,norm_f,stride = 8):
 
 	dims = (int(img.shape[1]//1.2),int(img.shape[0]//1.2))
 	pyramid = [img]
@@ -357,25 +341,21 @@ def scanForPedestriansNMS_votes(img,list_classifiers,deriv_kernel,norm_f,draw_wi
 		margin_ec = int((level.shape[1] % 8) - margin_c)
 
 		magnitudes, angles = computeGradient(level[margin_r:level.shape[0]-margin_er,margin_c:level.shape[1]-margin_ec],*deriv_kernel)
-
 		histograms = computeCellHistograms(0,magnitudes,angles)
 
 		for i in range(0,histograms.shape[0]-15):
 			for j in range(0,histograms.shape[1]-7):
 				window_norm_histograms = normalizeHistograms(histograms[i:i+16,j:j+8],norm_f=norm_f)
 				confidence = heavy_classifier([window_norm_histograms], list_classifiers)
-				if confidence>0.5:
+				if confidence > 0.5:
 					windows.append(np.array([j*8*scale,i*8*scale,(j*8+64)*scale, (i*8+128)*scale, confidence])) # coordinates x,y
 
 		scale *= 1.2
 
 	new_windows = non_maximum_suppression(np.asarray(windows), 0.3)
-	
-
 	return new_windows
 
-
-def scanForPedestriansNMS_filter(img,classifier,simple_classifier,deriv_kernel,norm_f,draw_window=False, stride = 8):
+def scanForPedestriansNMS_filter(img,classifier,simple_classifier,deriv_kernel,norm_f,stride = 8):
 
 	dims = (int(img.shape[1]//1.2),int(img.shape[0]//1.2))
 	pyramid = [img]
@@ -395,7 +375,6 @@ def scanForPedestriansNMS_filter(img,classifier,simple_classifier,deriv_kernel,n
 		margin_ec = int((level.shape[1] % 8) - margin_c)
 
 		magnitudes, angles = computeGradient(level[margin_r:level.shape[0]-margin_er,margin_c:level.shape[1]-margin_ec],*deriv_kernel)
-
 		histograms = computeCellHistograms(0,magnitudes,angles)
 
 		for i in range(0,histograms.shape[0]-15):
@@ -411,8 +390,6 @@ def scanForPedestriansNMS_filter(img,classifier,simple_classifier,deriv_kernel,n
 		scale *= 1.2
 
 	new_windows = non_maximum_suppression(np.asarray(windows), 0.3)
-	
-
 	return new_windows
 
 def main():
@@ -680,7 +657,7 @@ def main():
 		test_image_path_2 = "../INRIAPerson/Test/pos/crop001684.png"
 		test_image_path_3 = "../INRIAPerson/Test/pos/crop001670.png"
 		test_image_path_4 = "../INRIAPerson/Test/neg/no_person__no_bike_123.png"
-		
+
 
 		test_image = [cv2.imread(test_image_path_1)]
 		test_image.append(cv2.imread(test_image_path_2))
@@ -696,10 +673,10 @@ def main():
 			for win in result:
 				canvas = cv2.rectangle(canvas,(int(win[0]),int(win[1])),(int(win[2]),int(win[3])),(0,255,0))
 
-			
+
 			print("Simple   img%d: %.5f sec" % (i,t1-t0))
 			h.showMatrix([canvas], ["sin NMS"], grey= False, col= 1, row=1)
-			
+
 			t0 = time.perf_counter()
 			result = scanForPedestriansNMS(img, clasificador,(kx,ky),norm_2)
 			t1 = time.perf_counter()
@@ -708,7 +685,7 @@ def main():
 				canvas = cv2.rectangle(canvas,(int(win[0]),int(win[1])),(int(win[2]),int(win[3])),(0,255,0))
 			print("with NMS img%d: %.5f sec" % (i,t1-t0))
 			h.showMatrix([canvas], ["con NMS"], grey= False, col= 1, row=1)
-			
+
 			i+=1
 
 
@@ -723,7 +700,7 @@ def main():
 		features_l2_test = pickle.load(open("features_l2_test.pk", "rb"))
 		labels = pickle.load(open("labels.pk", "rb"))
 		labels_test = pickle.load(open("labels_test.pk", "rb"))
-		
+
 		simple_classifier = linear_model.LogisticRegression()
 		simple_classifier.fit(features_l2, labels)
 
@@ -736,7 +713,7 @@ def main():
 
 		num_yes = np.sum(labels)
 		list_classifiers = train_classifier_set(features_l2[:num_yes], features_l2[num_yes:],11)
-		
+
 		heavy_predict = np.rint(heavy_classifier(features_l2_test, list_classifiers))
 		correct_answers = np.sum(np.equal(heavy_predict, labels_test))
 		print("Test SVM vote: %.4f" % (correct_answers/len(heavy_predict)))
@@ -758,7 +735,7 @@ def main():
 				canvas = cv2.rectangle(canvas,(int(win[0]),int(win[1])),(int(win[2]),int(win[3])),(0,255,0))
 			print("LogReg   img%d: %.5f sec" % (i,t1-t0))
 			h.showMatrix([canvas], ["LogReg"], grey= False, col= 1, row=1)
-			
+
 			t0 = time.perf_counter()
 			result = scanForPedestriansNMS_votes(img, list_classifiers,(kx,ky),norm_2)
 			t1 = time.perf_counter()
@@ -767,7 +744,7 @@ def main():
 				canvas = cv2.rectangle(canvas,(int(win[0]),int(win[1])),(int(win[2]),int(win[3])),(0,255,0))
 			print("SVM vote img%d: %.5f sec" % (i,t1-t0))
 			h.showMatrix([canvas], ["votes"], grey= False, col= 1, row=1)
-			
+
 			i+=1
 
 
