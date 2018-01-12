@@ -88,7 +88,7 @@ def computeCellHistograms(border_size, magnitudes, angles, cell_size = 8,
 # Step 3: Normalization
 
 def normalizeHistograms(histograms, norm_f = norm_2, block_size = 2,
-						overlapping = 0.5):
+														overlapping = 0.5):
 	step = int(block_size*(1-overlapping))
 	normalized = []
 	for i in range(0,histograms.shape[0]-block_size+1, step):
@@ -96,7 +96,7 @@ def normalizeHistograms(histograms, norm_f = norm_2, block_size = 2,
 			normalized.extend((norm_f(histograms[i:i+block_size, j:j+block_size].flatten())))
 	return np.asarray(normalized)
 
-def obtainTrainingData(deriv_kernel, pos_path, neg_path, norm_f = norm_2):
+def obtainDataFeatures(deriv_kernel, pos_path, neg_path, norm_f = norm_2):
 	kx = deriv_kernel[0]
 	ky = deriv_kernel[1]
 
@@ -281,8 +281,8 @@ def main():
 	#extractNegativeWindows("../INRIAPerson/Train/neg", neg_train_path)
 	#extractNegativeWindows("../INRIAPerson/Test/neg", "../INRIAPerson/70X134H96/Test/neg")
 
-	#features, labels = obtainTrainingData((kx,ky), "../INRIAPerson/70X134H96/Test/pos", "../INRIAPerson/70X134H96/Test/neg", norm_1)
-	#features, labels = obtainTrainingData((kx,ky), "../INRIAPerson/70X134H96/Test/pos", "../INRIAPerson/70X134H96/Test/neg", norm_2_hys)
+	#features, labels = obtainDataFeatures((kx,ky), "../INRIAPerson/70X134H96/Test/pos", "../INRIAPerson/70X134H96/Test/neg", norm_1)
+	#features, labels = obtainDataFeatures((kx,ky), "../INRIAPerson/70X134H96/Test/pos", "../INRIAPerson/70X134H96/Test/neg", norm_2_hys)
 	#pickle.dump(labels, open("labels_test.pk", "wb"))
 	labels_test = pickle.load(open("labels_test.pk", "rb"))
 	#features_l1 = pickle.load(open("features_l1_test.pk", "rb"))
@@ -291,7 +291,7 @@ def main():
 
 
 	#t0 = time.perf_counter()
-	#features, labels = obtainTrainingData((kx,ky),pos_train_path,neg_train_path)
+	#features, labels = obtainDataFeatures((kx,ky),pos_train_path,neg_train_path)
 	#t1 = time.perf_counter()
 	#print("Total L2:    %.5f sec, %.5f each" % (t1-t0, (t1-t0)/labels.shape[0]))
 	#pickle.dump(labels, open("labels.pk", "wb"))
@@ -316,7 +316,7 @@ def main():
 	#correct_answers = np.sum(np.equal(predictions,labels))
 	#print("Test accuracy: %.4f" % (correct_answers/predictions.shape[0]))
 	#t0 = time.perf_counter()
-	#features, labels = obtainTrainingData((kx,ky),pos_train_path,neg_train_path, norm_1)
+	#features, labels = obtainDataFeatures((kx,ky),pos_train_path,neg_train_path, norm_1)
 	#t1 = time.perf_counter()
 	#print("Total L1:     %.5f sec, %.5f each" % (t1-t0, (t1-t0)/labels.shape[0]))
 	#pickle.dump(features, open("features_l1.pk", "wb"))
@@ -336,7 +336,7 @@ def main():
 
 
 	#t0 = time.perf_counter()
-	#features, labels = obtainTrainingData((kx,ky),pos_train_path,neg_train_path, norm_2_hys)
+	#features, labels = obtainDataFeatures((kx,ky),pos_train_path,neg_train_path, norm_2_hys)
 	#t1 = time.perf_counter()
 	#print("Total L2-Hys: %.5f sec, %.5f each" % (t1-t0, (t1-t0)/labels.shape[0]))
 	#pickle.dump(features, open("features_l2_hys.pk", "wb"))

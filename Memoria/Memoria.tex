@@ -112,6 +112,26 @@
     tabsize=3,
 }
 
+\newmintedfile[ExtraerNegativos]{python}{
+    firstline=138,
+    lastline=144,
+    numbersep=5pt,
+    gobble=0,
+    frame=lines,
+    framesep=2mm,
+    tabsize=3,
+}
+
+\newmintedfile[ExtraerCaracteristicas]{python}{
+    firstline=99,
+    lastline=135,
+    numbersep=5pt,
+    gobble=0,
+    frame=lines,
+    framesep=2mm,
+    tabsize=3,
+}
+
 \begin{document}
 
     \begin{titlepage}
@@ -162,7 +182,7 @@
     \section{Introducción}
 
         \par
-        El objetivo de este proyecto es explorar la técnica de \textbf{Histograma de Gradientes} (\textit{HoG}), descrita en \textit{Histograms of Oriented Gradientes for Human Detection} (2005) de \textit{Dalal} y \textit{Triggs}.
+        El objetivo de este proyecto es explorar la técnica de \textbf{Histograma de Gradientes} (\textit{HoG}) aplicada a la detección de peatones, descrita en \textit{Histograms of Oriented Gradientes for Human Detection} (2005) de \textit{Dalal} y \textit{Triggs}.
 
         \par
         Para ello, hemos implementado distintos aspectos del método realizando una serie de decisiones de diseño y hemos utilizado la base de datos original para comparar resultados. Las herramientas empleadas son \textit{Python} y las librerías \texttt{OpenCV}, \texttt{NumPy} y \texttt{scikit-learn}.
@@ -208,7 +228,7 @@
             Como se puede apreciar, hacemos uso de vectorización para calcular en pocas líneas las aportaciones de todos los píxeles de la celda a las secciones del histograma.
 
             \par
-            Cabe mencionar que tanto el tamaño de las celdas como la disposición de los histogramas en 9 categorías cubriendo el rango $\left[0,180\right]$ se han elegido así porque producen resultados de mayor calidad según el artículo. Asimismo, en el caso de las celdas un tamaño de $8\times8$ permite que haya un número exacto de éstas en las ventanas de $128\times64$ píxeles que luego usaremos para detectar peatones.
+            Cabe mencionar que tanto el tamaño de las celdas como la disposición de los histogramas en 9 categorías cubriendo el rango $\left[0,180\right]$ se han elegido así porque producen resultados de mayor calidad según el artículo. Asimismo, en el caso de las celdas un tamaño de $8\times8$ permite que haya un número exacto de éstas en las ventanas de $64\times128$ píxeles que luego usaremos para detectar peatones.
 
             \par
             Finalmente, veamos cómo se usa la función a la hora de calcular todos los histogramas de una imagen:
@@ -216,7 +236,7 @@
             \PasoTres[label=.]{../pedestrian_detection.py}
 
             \par
-            Lo primero que hacemos es eliminar el borde que pueda tener la imagen hasta que sus dimensiones sean múltiplos del tamaño de celda. Esto se hace principalmente porque los ejemplos positivos de peatones en los conjuntos de entrenamiento y test tienen un tamaño ligeramente mayor al de $128\times64$ que vamos a necesitar.
+            Lo primero que hacemos es eliminar el borde que pueda tener la imagen hasta que sus dimensiones sean múltiplos del tamaño de celda. Esto se hace principalmente porque los ejemplos positivos de peatones en los conjuntos de entrenamiento y test tienen un tamaño ligeramente mayor al de $64\times128$ que vamos a necesitar.
 
             \par
             Posteriormente, recorremos la imagen en saltos de 8 píxeles de izquierda a derecha y de arriba abajo para ir obteniendo los histogramas de toda la malla de celdas.
@@ -227,7 +247,7 @@
             La alta variabilidad de contextos y grados de iluminación que existe en la realidad provoca que los gradientes que calculamos se muevan en rangos muy amplios. Puesto que esto puede añadir una complejidad significativa a la ya difícil tarea de distinguir entre una clase y todo lo demás, es necesario el uso de normalización para tener una escala unificada de magnitudes entre 0 y 1.
 
             \par
-            En nuestro caso, esta normalización se realiza agrupando las celdas en bloques (por defecto, de $2\times2$ celdas) y aplicando el proceso con una cierta superposición entre dichos bloques (por defecto, $0.5$). La superposición, aunque pueda introducir redundancia, aporta calidad al proceso y mejora los resultados, guiándonos por las conclusiones de los autores de la técnica.
+            En nuestro caso, esta normalización se realiza agrupando las celdas en bloques cuadrados (por defecto, de $2\times2$ celdas) y aplicando el proceso con una cierta superposición entre dichos bloques (por defecto, 50\%). La superposición, aunque pueda introducir redundancia, aporta calidad al proceso y mejora los resultados, guiándonos por las conclusiones de los autores de la técnica.
 
             \par
             Según el cálculo realizado para normalizar, podemos distinguir entre las tres variantes probadas:
@@ -255,6 +275,29 @@
 
             \par
             La función recibe como parámetro el conjunto de histogramas, así como la normalización que aplicará, el tamaño de los bloques y el solapamiento entre los mismos. Tras calcular el intervalo entre cada par de bloques, los recorremos y añadimos cada conjunto resultante de histogramas normalizados al vector de características de la imagen.
+
+    \section{Detección de peatones}
+
+        \par
+        Para la detección se ha utilizado un tamaño de ventana de $64\times128$ píxeles, cuya forma permite abarcar personas aproximadamente erguidas. Asimismo, dentro de las ventanas con ejemplos positivos de entrenamiento y test, parte de este tamaño es un borde alrededor del peatón que añade contexto útil; los autores comprobaron que reducir este borde causaba una pérdida notable de precisión.
+
+        \par
+        Con los ejemplos positivos ya proporcionados, nuestra próxima tarea será conseguir ejemplos negativos del mismo tamaño a partir de las fotografías del conjunto de datos que no contienen personas. Siguiendo el procedimiento original, vamos a extraer 10 ventanas aleatorias de cada una de esas imágenes. Para no tener que generar miles cada vez que queramos entrenar un clasificador, las guardamos una única vez:
+
+        \ExtraerNegativos[label=.]{../pedestrian_detection.py}
+
+        \par
+        Una vez tenemos todas las imágenes necesarias, es el momento de aplicar el proceso descrito en el apartado anterior a cada una de ellas para obtener las características con las que trabajarán los clasificadores de peatones. En código esto se traduce en recorrer los directorios de ejemplos positivos y negativos y utilizar las distintas funciones que calculan un \textbf{Histograma de Gradientes}:
+
+        \ExtraerCaracteristicas[label=.]{../pedestrian_detection.py}
+
+        \par
+        Tal como se mencionó anteriormente, las imágenes positivas ya incluidas en el conjunto de datos tienen un borde que incrementa un poco el tamaño, por lo que antes de procesar cada una hay que conocer cuánto vale ese borde para que \texttt{computeCellHistograms} trabaje sobre $64\times128$.
+
+        \par
+        Llamaremos a esta función dos veces: una para crear los datos de entrenamiento y otra para crear los datos de test.
+
+
 
 
 \end{document}
