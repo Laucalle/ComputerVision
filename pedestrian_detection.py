@@ -25,8 +25,10 @@ def norm_2_hys(x):
 
 def computeGradient(img, kx, ky):
 
-	img_x = cv2.sepFilter2D(img, cv2.CV_32F, kx, ky, borderType=cv2.BORDER_REPLICATE)
-	img_y = cv2.sepFilter2D(img, cv2.CV_32F, ky, kx, borderType=cv2.BORDER_REPLICATE)
+	img_x = cv2.sepFilter2D(img, cv2.CV_32F, kx, ky,
+	 						borderType=cv2.BORDER_REPLICATE)
+	img_y = cv2.sepFilter2D(img, cv2.CV_32F, ky, kx,
+							borderType=cv2.BORDER_REPLICATE)
 
 	mag, angle = cv2.cartToPolar(img_x, img_y,angleInDegrees=True)
 	angle = angle%180
@@ -35,30 +37,13 @@ def computeGradient(img, kx, ky):
 
 	magnitudes = np.apply_along_axis(np.max, 2, mag)
 
-	#t0 = time.perf_counter()
-	#indices = np.apply_along_axis(np.argmax, 2, mag)
-	#angulo = np.zeros(img.shape[:2])
-	#for i in range(img.shape[0]):
-	#	for j in range(img.shape[1]):
-	#		angulo[i,j] = angle[i,j,indices[i,j]]
-	#t1 = time.perf_counter()
-
 	coord_0 = np.repeat(np.arange(img.shape[0]),img.shape[1])
 	coord_1 = np.tile(np.arange(img.shape[1]),img.shape[0])
 
-	#t3 = time.perf_counter()
 	indices = np.apply_along_axis(np.argmax, 2, mag)
 	angles = angle[coord_0, coord_1, indices.flatten()]
 	angles = angles.reshape(img.shape[:2])
-	#t4 = time.perf_counter()
 
-	del mag
-	del angle
-
-	#print("Bucle: %.3f seconds" % (t1-t0))
-	#print("Otro : %.3f seconds" % (t4-t3))
-
-	#print(np.all(angulo==cosa))
 	return magnitudes, angles
 
 # Step 2: Cell Histograms
@@ -81,7 +66,8 @@ def cellHistogram(cell_m, cell_o, bins = 9, max_angle = 180):
 
 	return histogram
 
-def computeCellHistograms(border_size, magnitudes, angles, cell_size = 8, bins = 9, max_angle = 180):
+def computeCellHistograms(border_size, magnitudes, angles, cell_size = 8,
+ 							bins = 9, max_angle = 180):
 
 	end_r = magnitudes.shape[0] - border_size
 	end_c = magnitudes.shape[1] - border_size
@@ -101,7 +87,8 @@ def computeCellHistograms(border_size, magnitudes, angles, cell_size = 8, bins =
 
 # Step 3: Normalization
 
-def normalizeHistograms(histograms, norm_f = norm_2, block_size = 2, overlapping = 0.5):
+def normalizeHistograms(histograms, norm_f = norm_2, block_size = 2,
+						overlapping = 0.5):
 	step = int(block_size*(1-overlapping))
 	normalized = []
 	for i in range(0,histograms.shape[0]-block_size+1, step):
@@ -179,7 +166,7 @@ def extractHardExamples(path, deriv_kernel, classifier, stride = 8, norm_f = nor
 						cv2.imwrite("hard_examples/"+str(n_examples)+".png",histograms[i:i+128,j:j+64])
 
 def scanForPedestrians(img,list_classifiers, simple_classiffier,deriv_kernel,norm_f,draw_window=False, stride = 8):
-	
+
 	dims = (int(img.shape[1]//1.2),int(img.shape[0]//1.2))
 	pyramid = [img]
 	windows = []
@@ -198,7 +185,7 @@ def scanForPedestrians(img,list_classifiers, simple_classiffier,deriv_kernel,nor
 		margin_er = int((level.shape[0] % 8) - margin_r)
 		margin_c = int((level.shape[1] % 8) // 2)
 		margin_ec = int((level.shape[1] % 8) - margin_c)
-	
+
 		magnitudes, angles = computeGradient(level[margin_r:level.shape[0]-margin_er,margin_c:level.shape[1]-margin_ec],*deriv_kernel)
 
 		histograms = computeCellHistograms(0,magnitudes,angles)
@@ -209,7 +196,7 @@ def scanForPedestrians(img,list_classifiers, simple_classiffier,deriv_kernel,nor
 			for j in range(0,histograms.shape[1]-7):
 				window_norm_histograms = normalizeHistograms(histograms[i:i+16,j:j+8],norm_f=norm_f)
 				prob = simple_classiffier.predict_proba([window_norm_histograms])
-				
+
 				if prob[0,1] > 0.8:
 					#confidence = classifier.decision_function([window_norm_histograms])[0]
 					confidence = heavy_classifier([window_norm_histograms], list_classifiers)
@@ -226,7 +213,7 @@ def scanForPedestrians(img,list_classifiers, simple_classiffier,deriv_kernel,nor
 	new_canvas = np.copy(img)
 	for win in new_windows:
 		new_canvas = cv2.rectangle(new_canvas,(int(win[0]),int(win[1])),(int(win[2]),int(win[3])),(0,255,0))
-	
+
 	#if draw_window:
 	#	h.showMatrix(minicanvas_list, [str(i) for i in range(len(minicanvas_list))], grey = False)
 	return canvas, new_canvas
@@ -257,7 +244,7 @@ def non_maximum_suppression(windows, overlap_threshold):
 
 		overlap = (width*height).astype(np.float32)/area[I]
 		mask = overlap<overlap_threshold
-		
+
 		I = I[mask]
 		if mask.shape[0]-np.sum(mask) > 1 :
 			chosen.append(i)
@@ -293,7 +280,7 @@ def main():
 	test_img = cv2.imread(test_image_path)
 	#extractNegativeWindows("../INRIAPerson/Train/neg", neg_train_path)
 	#extractNegativeWindows("../INRIAPerson/Test/neg", "../INRIAPerson/70X134H96/Test/neg")
-	
+
 	#features, labels = obtainTrainingData((kx,ky), "../INRIAPerson/70X134H96/Test/pos", "../INRIAPerson/70X134H96/Test/neg", norm_1)
 	#features, labels = obtainTrainingData((kx,ky), "../INRIAPerson/70X134H96/Test/pos", "../INRIAPerson/70X134H96/Test/neg", norm_2_hys)
 	#pickle.dump(labels, open("labels_test.pk", "wb"))
@@ -312,7 +299,7 @@ def main():
 	#labels = pickle.load(open("labels.pk", "rb"))
 	#features = pickle.load(open("features.pk", "rb"))
 
-	
+
 	#classifier = svm.LinearSVC()
 	#classifier.fit(features, labels)
 	#predictions = classifier.predict(features_l2)
@@ -320,11 +307,11 @@ def main():
 	#correct_answers = np.sum(np.equal(predictions,labels))
 	#print("Test l2   : %.4f" % (correct_answers/predictions.shape[0]))
 	#pickle.dump(classifier, open("classifier_l2.pk","wb"))
-	
+
 	#proc = multiprocessing.Process(target = scanForPedestrians, args = (test_img, classifier,(kx,ky),norm_2, draw_window = True))
 	#proc.start()
 	#proc.join()
-	
+
 	#predictions = classifier.predict(features)
 	#correct_answers = np.sum(np.equal(predictions,labels))
 	#print("Test accuracy: %.4f" % (correct_answers/predictions.shape[0]))
@@ -336,7 +323,7 @@ def main():
 	#features = pickle.load(open("features_l1.pk", "rb"))
 
 	#classifier = pickle.load(open("classifier_l1.pk", "rb"))
-	
+
 	#classifier.fit(features, labels)
 	#predictions = classifier.predict(features_l1)
 
@@ -357,14 +344,14 @@ def main():
 	#features = pickle.load(open("features_l2_hys.pk", "rb"))
 
 	#classifier = pickle.load(open("classifier_l2_hys.pk", "rb"))
-	
+
 	#classifier.fit(features, labels)
 	#predictions = classifier.predict(features_l2_hys)
 
 	#correct_answers = np.sum(np.equal(predictions,labels))
 	#print("Test l2hys: %.4f" % (correct_answers/predictions.shape[0]))
 	#pickle.dump(classifier, open("classifier_l2_hys.pk","wb"))
-	
+
 	#result3 = scanForPedestrians(test_img, classifier,(kx,ky),norm_2_hys, draw_window = True)
 	#h.showMatrix([result3], ["L2-Hys"], grey = False, col=1, row=1)
 	features = pickle.load(open("features_l2_hys.pk", "rb"))
@@ -377,7 +364,7 @@ def main():
 	#list_classifiers = pickle.load(open("classifier_list.pk","rb"))
 	simple_classifier = linear_model.LogisticRegression()
 	simple_classifier.fit(features, labels)
-	
+
 	simple_predict = simple_classifier.predict_proba(features_l2_hys_test)[:,1]
 	simple_predict = (simple_predict*10)//5
 	correct_answers = np.sum(np.equal(simple_predict, labels_test))

@@ -1,0 +1,260 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{color}
+\usepackage{enumerate}
+\usepackage{fancyhdr}
+\usepackage{minted}
+\usepackage{graphicx}
+\usepackage{array}
+\usepackage{hyperref}
+\usepackage{amssymb,amsmath}
+\usepackage{multirow}
+\usepackage[spanish, es-tabla]{babel}
+\usepackage[math]{iwona}
+\usepackage{titlesec}
+
+\setlength{\oddsidemargin}{18pt}
+\setlength{\headheight}{14pt}
+\setlength{\textheight}{672pt}
+\setlength{\marginparsep}{11pt}
+\setlength{\footskip}{30pt}
+\hoffset = 0pt
+\voffset = 0pt
+\setlength{\topmargin}{0pt}
+\setlength{\headsep}{25pt}
+\setlength{\textwidth}{424pt}
+\setlength{\marginparwidth}{54pt}
+\setlength{\marginparpush}{5pt}
+\paperwidth = 597pt
+\paperheight = 845pt
+
+\pagestyle{fancy}
+\fancyhead[LO]{\textcolor[rgb]{0,0,0}{Grado en Ingeniería Informática}}
+\fancyhead[RO]{\textcolor[rgb]{0.2,0.2,0.9}{Visión por Computador, Curso 2017-2018}}
+
+\hypersetup{
+    colorlinks,
+    citecolor=black,
+    filecolor=black,
+    linkcolor=black,
+    urlcolor=blue
+}
+
+\newcommand{\horrule}[1]{\rule{\linewidth}{#1}}
+
+\newmintedfile[PasoUno]{python}{
+    firstline=26,
+    lastline=47,
+    numbersep=5pt,
+    gobble=0,
+    frame=lines,
+    framesep=2mm,
+    tabsize=3,
+}
+
+\newmintedfile[PasoDos]{python}{
+    firstline=51,
+    lastline=67,
+    numbersep=5pt,
+    gobble=0,
+    frame=lines,
+    framesep=2mm,
+    tabsize=3,
+}
+
+\newmintedfile[PasoTres]{python}{
+    firstline=69,
+    lastline=86,
+    numbersep=5pt,
+    gobble=0,
+    frame=lines,
+    framesep=2mm,
+    tabsize=3,
+}
+
+\newmintedfile[PasoCuatroNormaUno]{python}{
+    firstline=11,
+    lastline=13,
+    numbersep=5pt,
+    gobble=0,
+    frame=lines,
+    framesep=2mm,
+    tabsize=3,
+}
+
+\newmintedfile[PasoCuatroNormaDos]{python}{
+    firstline=15,
+    lastline=17,
+    numbersep=5pt,
+    gobble=0,
+    frame=lines,
+    framesep=2mm,
+    tabsize=3,
+}
+
+\newmintedfile[PasoCuatroNormaDosHys]{python}{
+    firstline=19,
+    lastline=22,
+    numbersep=5pt,
+    gobble=0,
+    frame=lines,
+    framesep=2mm,
+    tabsize=3,
+}
+
+\newmintedfile[PasoCuatro]{python}{
+    firstline=90,
+    lastline=97,
+    numbersep=5pt,
+    gobble=0,
+    frame=lines,
+    framesep=2mm,
+    tabsize=3,
+}
+
+\begin{document}
+
+    \begin{titlepage}
+
+        \centering
+
+        \begin{figure}[h]
+
+            \centering
+            \includegraphics[width=0.6\textwidth]{logo-ugr.png}
+
+        \end{figure}
+
+        \vspace{1cm}
+
+        {\scshape\LARGE Universidad de Granada}
+
+        \vspace{1cm}
+
+        {\LARGE Visión por Computador}
+
+        \vspace{1cm}
+
+        \horrule{0.5pt} \\[0.4cm]
+
+        {\huge\bfseries\textit{Proyecto final}} \\
+
+        \horrule{2pt} \\[0.5cm]
+
+        \vspace{1cm}
+
+        {\itshape\large Laura Calle Caraballo \\
+        Javier León Palomares}
+
+        \vfill
+
+        {\Large\today}
+
+    \end{titlepage}
+
+\newpage
+
+    \tableofcontents
+    \listoffigures
+
+\newpage
+
+    \section{Introducción}
+
+        \par
+        El objetivo de este proyecto es explorar la técnica de \textbf{Histograma de Gradientes} (\textit{HoG}), descrita en \textit{Histograms of Oriented Gradientes for Human Detection} (2005) de \textit{Dalal} y \textit{Triggs}.
+
+        \par
+        Para ello, hemos implementado distintos aspectos del método realizando una serie de decisiones de diseño y hemos utilizado la base de datos original para comparar resultados. Las herramientas empleadas son \textit{Python} y las librerías \texttt{OpenCV}, \texttt{NumPy} y \texttt{scikit-learn}.
+
+    \section{Descripción de la técnica e implementación}
+
+        \par
+        El \textbf{Histograma de Gradientes} nos permitirá extraer características relevantes de una imagen para poder proceder a su clasificación (contiene un peatón o no). Consta de varias etapas que analizaremos a continuación.
+
+        \subsection{Cálculo de gradientes}
+
+            \par
+            El primer paso del proceso es calcular los gradientes horizontales y verticales de cada imagen. Para ello, utilizaremos un \textit{kernel} unidimensional $\left[-1,0,1\right]$ centrado en cada píxel a evaluar.
+
+            \par
+            Utilizando los valores anteriores obtendremos las orientaciones de los cambios de intensidad y sus magnitudes. Posteriormente, ya que las imágenes son a color, elegiremos el canal con mayor magnitud de gradiente para cada píxel.
+
+            \par
+            El código correspondiente a esta parte es:
+
+            \PasoUno[label=.]{../pedestrian_detection.py}
+
+            \par
+            Para obtener las orientaciones de los gradientes (limitándolas al rango $[0,180]$) y sus magnitudes hemos usado \texttt{cartToPolar}, que implementa las siguientes fórmulas:
+
+            $$\theta = \arctan{\frac{g_y}{g_x}}$$
+            $$g = \sqrt{g_{x}^2 + g_{y}^2}$$
+
+            \par
+            Respecto a la selección del canal de color con mayor respuesta para cada píxel, la aproximación más directa sería utilizando dos bucles anidados para recorrer la imagen píxel por píxel, pero es posible ganar ligeramente en eficiencia aprovechando la capacidad de vectorización de \texttt{NumPy}: generamos todas las combinaciones de posiciones de la imagen, siendo cada una representada por \texttt{(coord\_0[i],coord\_1[i])}; obtenemos los índices del canal con mayor respuesta en cada píxel; finalmente, cada posición estará representada junto a su canal elegido por \texttt{(coord\_0[i],coord\_1[i],indices[i])}. De esta forma, podemos aprovechar la indexación por conjuntos de índices para resumir el proceso de selección en una única línea.
+
+        \subsection{Obtención de histogramas}
+
+            \par
+            El uso de histogramas locales se basa en que la forma distintiva de un objeto se puede caracterizar muchas veces con suficiente calidad utilizando distribuciones y orientaciones de gradientes por áreas de una imagen. Además, al resumir implícitamente la información, la dimensionalidad del vector de características se reduce.
+
+            \par
+            Para calcular estos histogramas, vamos a dividir la imagen en celdas cuadradas de un cierto número de píxeles (en nuestro caso, $8\times8$). En cuanto a los  histogramas, estarán formados por 9 secciones que corresponden a intervalos de 20 grados entre 0 y 180, puesto que tomaremos las orientaciones por dirección y no por sentido. Para conocer la aportación del ángulo en un píxel, haremos una interpolación lineal que reparta su influencia entre las dos secciones más cercanas; por ejemplo, si tenemos un ángulo de 35 grados, aportará el 25\% de su valor de magnitud a la sección centrada en 20 y el 75\% restante a la centrada en 40.
+
+            \PasoDos[label=.]{../pedestrian_detection.py}
+
+            \par
+            Como se puede apreciar, hacemos uso de vectorización para calcular en pocas líneas las aportaciones de todos los píxeles de la celda a las secciones del histograma.
+
+            \par
+            Cabe mencionar que tanto el tamaño de las celdas como la disposición de los histogramas en 9 categorías cubriendo el rango $\left[0,180\right]$ se han elegido así porque producen resultados de mayor calidad según el artículo. Asimismo, en el caso de las celdas un tamaño de $8\times8$ permite que haya un número exacto de éstas en las ventanas de $128\times64$ píxeles que luego usaremos para detectar peatones.
+
+            \par
+            Finalmente, veamos cómo se usa la función a la hora de calcular todos los histogramas de una imagen:
+
+            \PasoTres[label=.]{../pedestrian_detection.py}
+
+            \par
+            Lo primero que hacemos es eliminar el borde que pueda tener la imagen hasta que sus dimensiones sean múltiplos del tamaño de celda. Esto se hace principalmente porque los ejemplos positivos de peatones en los conjuntos de entrenamiento y test tienen un tamaño ligeramente mayor al de $128\times64$ que vamos a necesitar.
+
+            \par
+            Posteriormente, recorremos la imagen en saltos de 8 píxeles de izquierda a derecha y de arriba abajo para ir obteniendo los histogramas de toda la malla de celdas.
+
+        \subsection{Normalización de histogramas}
+
+            \par
+            La alta variabilidad de contextos y grados de iluminación que existe en la realidad provoca que los gradientes que calculamos se muevan en rangos muy amplios. Puesto que esto puede añadir una complejidad significativa a la ya difícil tarea de distinguir entre una clase y todo lo demás, es necesario el uso de normalización para tener una escala unificada de magnitudes entre 0 y 1.
+
+            \par
+            En nuestro caso, esta normalización se realiza agrupando las celdas en bloques (por defecto, de $2\times2$ celdas) y aplicando el proceso con una cierta superposición entre dichos bloques (por defecto, $0.5$). La superposición, aunque pueda introducir redundancia, aporta calidad al proceso y mejora los resultados, guiándonos por las conclusiones de los autores de la técnica.
+
+            \par
+            Según el cálculo realizado para normalizar, podemos distinguir entre las tres variantes probadas:
+
+            \begin{itemize}
+
+                \item
+                División entre la norma L1:
+                \PasoCuatroNormaUno[label=.]{../pedestrian_detection.py}
+
+                \item
+                División entre la norma L2:
+                \PasoCuatroNormaDos[label=.]{../pedestrian_detection.py}
+
+                \item
+                División preliminar entre la norma L2, recorte de valores superiores a 0.2 y división entre su nueva norma L2:
+                \PasoCuatroNormaDosHys[label=.]{../pedestrian_detection.py}
+
+            \end{itemize}
+
+            \par
+            La forma de aplicar lo anterior se traduce en la siguiente función:
+
+            \PasoCuatro[label=.]{../pedestrian_detection.py}
+
+            \par
+            La función recibe como parámetro el conjunto de histogramas, así como la normalización que aplicará, el tamaño de los bloques y el solapamiento entre los mismos. Tras calcular el intervalo entre cada par de bloques, los recorremos y añadimos cada conjunto resultante de histogramas normalizados al vector de características de la imagen.
+
+
+\end{document}
