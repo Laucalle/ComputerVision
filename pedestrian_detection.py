@@ -295,11 +295,11 @@ def scanForPedestriansSimple(img,classifier,deriv_kernel,norm_f,draw_window=Fals
 				window_norm_histograms = normalizeHistograms(histograms[i:i+16,j:j+8],norm_f=norm_f)		
 
 				if classifier.predict([window_norm_histograms])[0]:
-					canvas = cv2.rectangle(canvas,(int(j*8*scale),int(i*8*scale)),(int((j*8+64)*scale),int((i*8+128)*scale)),(255,0,0))
+					windows.append(np.array([j*8*scale,i*8*scale,(j*8+64)*scale, (i*8+128)*scale, confidence])) # coordinates x,y
 
 		scale *= 1.2
 
-	return canvas
+	return windows
 
 def scanForPedestriansNMS(img,classifier,deriv_kernel,norm_f,draw_window=False, stride = 8):
 
@@ -334,11 +334,8 @@ def scanForPedestriansNMS(img,classifier,deriv_kernel,norm_f,draw_window=False, 
 		scale *= 1.2
 
 	new_windows = non_maximum_suppression(np.asarray(windows), 0.3)
-	canvas = np.copy(img)
-	for win in new_windows:
-		canvas = cv2.rectangle(canvas,(int(win[0]),int(win[1])),(int(win[2]),int(win[3])),(0,255,0))
-
-	return canvas
+	
+	return new_windows
 
 def scanForPedestriansNMS_votes(img,list_classifiers,deriv_kernel,norm_f,draw_window=False, stride = 8):
 
@@ -373,11 +370,9 @@ def scanForPedestriansNMS_votes(img,list_classifiers,deriv_kernel,norm_f,draw_wi
 		scale *= 1.2
 
 	new_windows = non_maximum_suppression(np.asarray(windows), 0.3)
-	canvas = np.copy(img)
-	for win in new_windows:
-		canvas = cv2.rectangle(canvas,(int(win[0]),int(win[1])),(int(win[2]),int(win[3])),(0,255,0))
+	
 
-	return canvas
+	return new_windows
 
 
 def scanForPedestriansNMS_filter(img,classifier,simple_classifier,deriv_kernel,norm_f,draw_window=False, stride = 8):
@@ -416,11 +411,9 @@ def scanForPedestriansNMS_filter(img,classifier,simple_classifier,deriv_kernel,n
 		scale *= 1.2
 
 	new_windows = non_maximum_suppression(np.asarray(windows), 0.3)
-	canvas = np.copy(img)
-	for win in new_windows:
-		canvas = cv2.rectangle(canvas,(int(win[0]),int(win[1])),(int(win[2]),int(win[3])),(0,255,0))
+	
 
-	return canvas
+	return new_windows
 
 def main():
 
@@ -698,16 +691,23 @@ def main():
 			t0 = time.perf_counter()
 			result = scanForPedestriansSimple(img, clasificador,(kx,ky),norm_2)
 			t1 = time.perf_counter()
+
+			canvas = np.copy(img)
+			for win in result:
+				canvas = cv2.rectangle(canvas,(int(win[0]),int(win[1])),(int(win[2]),int(win[3])),(0,255,0))
+
 			
 			print("Simple   img%d: %.5f sec" % (i,t1-t0))
-			h.showMatrix([result], ["sin NMS"], grey= False, col= 1, row=1)
+			h.showMatrix([canvas], ["sin NMS"], grey= False, col= 1, row=1)
 			
 			t0 = time.perf_counter()
 			result = scanForPedestriansNMS(img, clasificador,(kx,ky),norm_2)
 			t1 = time.perf_counter()
-			
+			canvas = np.copy(img)
+			for win in result:
+				canvas = cv2.rectangle(canvas,(int(win[0]),int(win[1])),(int(win[2]),int(win[3])),(0,255,0))
 			print("with NMS img%d: %.5f sec" % (i,t1-t0))
-			h.showMatrix([result], ["con NMS"], grey= False, col= 1, row=1)
+			h.showMatrix([canvas], ["con NMS"], grey= False, col= 1, row=1)
 			
 			i+=1
 
@@ -753,16 +753,20 @@ def main():
 			t0 = time.perf_counter()
 			result = scanForPedestriansNMS_filter(img, clasificador, simple_classifier, (kx,ky),norm_2)
 			t1 = time.perf_counter()
-			
+			canvas = np.copy(img)
+			for win in result:
+				canvas = cv2.rectangle(canvas,(int(win[0]),int(win[1])),(int(win[2]),int(win[3])),(0,255,0))
 			print("LogReg   img%d: %.5f sec" % (i,t1-t0))
-			h.showMatrix([result], ["LogReg"], grey= False, col= 1, row=1)
+			h.showMatrix([canvas], ["LogReg"], grey= False, col= 1, row=1)
 			
 			t0 = time.perf_counter()
 			result = scanForPedestriansNMS_votes(img, list_classifiers,(kx,ky),norm_2)
 			t1 = time.perf_counter()
-			
+			canvas = np.copy(img)
+			for win in result:
+				canvas = cv2.rectangle(canvas,(int(win[0]),int(win[1])),(int(win[2]),int(win[3])),(0,255,0))
 			print("SVM vote img%d: %.5f sec" % (i,t1-t0))
-			h.showMatrix([result], ["votes"], grey= False, col= 1, row=1)
+			h.showMatrix([canvas], ["votes"], grey= False, col= 1, row=1)
 			
 			i+=1
 
