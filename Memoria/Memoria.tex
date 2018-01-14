@@ -163,6 +163,36 @@
     tabsize=3,
 }
 
+\newmintedfile[EntrenamientoClasificadores]{python}{
+    firstline=246,
+    lastline=255,
+    numbersep=5pt,
+    gobble=0,
+    frame=lines,
+    framesep=2mm,
+    tabsize=3,
+}
+
+\newmintedfile[ClasificadorVotos]{python}{
+    firstline=240,
+    lastline=244,
+    numbersep=5pt,
+    gobble=0,
+    frame=lines,
+    framesep=2mm,
+    tabsize=3,
+}
+
+\newmintedfile[EscaneoVotos]{python}{
+    firstline=324,
+    lastline=356,
+    numbersep=5pt,
+    gobble=0,
+    frame=lines,
+    framesep=2mm,
+    tabsize=3,
+}
+
 \begin{document}
 
     \begin{titlepage}
@@ -564,9 +594,106 @@
     			\end{table}
 
                 \par
-                En la tabla se aprecia que la pérdida de velocidad es mínima, y que incluso obtenemos beneficio si abarcamos también la fase de dibujado de las ventanas ya que quedan muchas menos.
+                En la tabla se aprecia que la pérdida de velocidad es mínima, y que incluso obtenemos beneficio si abarcamos también la posterior fase de dibujado de las ventanas.
 
+            \subsubsection{Selección por votación}
 
+                \par
+                Asumiendo el uso de \textit{NMS}, otra manera de intentar arreglar el problema es utilizar varios clasificadores y elegir la clase de una imagen por mayoría simple. Veamos cómo se han entrenado:
+
+                \EntrenamientoClasificadores[label=.]{../pedestrian_detection.py}
+
+                \par
+                Recibiendo como parámetro los conjuntos completos de muestras, entrenamos cada uno de los $n$ clasificadores con todos los ejemplos positivos y con un subconjunto aleatorio de ejemplos negativos, de forma que las clases estén equilibradas.
+
+                \par
+                Para la decisión por mayoría simple, lo único que hemos de hacer es sumar los votos y dividir por el número de clasificadores; si supera 0.5, se acepta como positivo:
+
+                \ClasificadorVotos[label=.]{../pedestrian_detection.py}
+
+                \par
+                Finalmente, la función actualizada queda de la siguiente manera:
+
+                \EscaneoVotos[label=.]{../pedestrian_detection.py}
+
+                \par
+                Como vemos, el único cambio es que la clasificación ahora toma en cuenta el voto por mayoría, siendo afirmativo en caso de que su proporción supere el 50\%.
+
+                \par
+                Comparemos ahora los nuevos resultados con los obtenidos en la supresión de no máximos:
+
+                \begin{figure}[H]
+
+    		        \begin{center}
+
+    		        	\setlength{\fboxrule}{0pt}
+                        \fbox{
+    						\begin{varwidth}{\textwidth}
+    							\centering
+    							\includegraphics[width=.46\textwidth]{ConVotos-1.jpg}
+    						\end{varwidth}
+    					}
+                        \fbox{
+    						\begin{varwidth}{\textwidth}
+    							\centering
+    							\includegraphics[width=.46\textwidth]{ConNMS-1.jpg}
+    						\end{varwidth}
+    					}
+                        \fbox{
+    						\begin{varwidth}{\textwidth}
+    							\centering
+    							\includegraphics[width=.46\textwidth]{ConVotos-2.jpg}
+    						\end{varwidth}
+    					}
+    					\fbox{
+    						\begin{varwidth}{\textwidth}
+    							\centering
+    							\includegraphics[width=.46\textwidth]{ConNMS-2.jpg}
+    						\end{varwidth}
+    					}
+                        \fbox{
+    						\begin{varwidth}{\textwidth}
+    							\centering
+    							\includegraphics[width=.46\textwidth]{ConVotos-3.jpg}
+    						\end{varwidth}
+    					}
+                        \fbox{
+    						\begin{varwidth}{\textwidth}
+    							\centering
+    							\includegraphics[width=.46\textwidth]{ConNMS-3.jpg}
+    						\end{varwidth}
+    					}
+                        \fbox{
+    						\begin{varwidth}{\textwidth}
+    							\centering
+    							\includegraphics[width=.46\textwidth]{ConVotos-4.jpg}
+    						\end{varwidth}
+    					}
+    					\fbox{
+    						\begin{varwidth}{\textwidth}
+    							\centering
+    							\includegraphics[width=.46\textwidth]{ConNMS-4.jpg}
+    						\end{varwidth}
+    					}
+
+    				\end{center}
+    				\caption{Comparación de resultados con votos (izquierda) y sin votos (derecha).}
+
+    			\end{figure}
+
+                \par
+                El sistema de votos, probado con 11 \textit{SVM}s, parece dar peores resultados en cuanto a falsos positivos. Sin embargo, al final de la sección analizaremos todas las alternativas para sacar algunas conclusiones más.
+
+            \subsubsection{Incrementando el umbral}
+
+                \par
+                Otra posibilidad para rebajar la tasa de falsos positivos es elevar el umbral a partir del cual consideramos que una imagen contiene un peatón. La desventaja de esto es que aumentará el número de falsos negativos, pero el equilibrio entre ambos tipos de errores es una cuestión que trataremos más adelante.
+
+                \par
+                La librería \texttt{scikit-learn} contiene varias formas de utilizar un modelo \textit{SVM}. La implementación más eficiente y escalable no ofrece la posibilidad de devolver la confianza (en tanto por 1) de la predicción, por lo que sólo podríamos usar la implementación más lenta, que sí tiene tal funcionalidad.
+
+                \par
+                Sin embargo, realizando pruebas obtenemos que una regresión logística tiene un acierto del 98.6\% en test, muy similar a nuestro mejor resultado.
 
 
 
