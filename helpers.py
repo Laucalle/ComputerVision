@@ -4,25 +4,6 @@ from math import sqrt, ceil, floor, exp
 from matplotlib import pyplot as plt
 from itertools import repeat
 from matplotlib import pyplot as plt
-def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '#'):
-    """
-    Call in a loop to create terminal progress bar
-    @params:
-        iteration   - Required  : current iteration (Int)
-        total       - Required  : total iterations (Int)
-        prefix      - Optional  : prefix string (Str)
-        suffix      - Optional  : suffix string (Str)
-        decimals    - Optional  : positive number of decimals in percent complete (Int)
-        length      - Optional  : character length of bar (Int)
-        fill        - Optional  : bar fill character (Str)
-    """
-    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
-    filledLength = int(length * iteration // total)
-    bar = fill * filledLength + '-' * (length - filledLength)
-    print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end = '\r')
-    # Print New Line on Complete
-    if iteration == total: 
-        print()
 
 def showMatrix(img, labels, grey = True, col = None, row= None):
 	# Para disponer las imagenes en una matriz cuadrada
@@ -48,8 +29,3 @@ def showMatrix(img, labels, grey = True, col = None, row= None):
 			else:	
 				plt.imshow(img[i])
 	plt.show()
-
-
-# esta funcion transforma los valores al intervalo 0-255
-def CenterScale(img):
-	return np.uint8(((img-img.min()*1.0)/(img.max()-img.min()))*255)

@@ -119,7 +119,6 @@ def obtainDataFeatures(deriv_kernel, pos_path, neg_path, norm_f = norm_2):
 		histograms = computeCellHistograms(border_s, magnitudes, angles, 8)
 		descriptor = normalizeHistograms(histograms,norm_f=norm_f)
 		features[i,:] = descriptor
-		h.printProgressBar(i, features.shape[0])
 		i+=1
 
 	for name in neg_dir:
@@ -132,7 +131,6 @@ def obtainDataFeatures(deriv_kernel, pos_path, neg_path, norm_f = norm_2):
 		descriptor = normalizeHistograms(histograms,norm_f=norm_f)
 		features[i,:] = descriptor
 		i+=1
-		h.printProgressBar(i, features.shape[0])
 
 	return features, labels
 
