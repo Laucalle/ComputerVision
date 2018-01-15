@@ -202,8 +202,7 @@ def scanForPedestrians(img,list_classifiers, simple_classiffier,deriv_kernel,nor
 
 		scale *= 1.2
 
-	new_windows = non_maximum_suppression(np.asarray(windows), 0.3)
-	return new_windows
+	return non_maximum_suppression(np.asarray(windows), 0.3)
 
 def non_maximum_suppression(windows, overlap_threshold):
 	if not len(windows):
@@ -216,18 +215,18 @@ def non_maximum_suppression(windows, overlap_threshold):
 	c = windows[:,4]
 	I = np.argsort(c)[::-1]
 
-	area = (x2-x1+1) * (y2-y1)+1
+	area = (x2-x1+1) * (y2-y1+1)
 	chosen = []
 
 	while len(I):
 		i = I[0]
-		xx1 = np.maximum(x1[i], x1[I])
-		yy1 = np.maximum(y1[i], y1[I])
-		xx2 = np.minimum(x2[i], x2[I])
-		yy2 = np.minimum(y2[i], y2[I])
+		#xx1 = np.maximum(x1[i], x1[I])
+		#yy1 = np.maximum(y1[i], y1[I])
+		#xx2 = np.minimum(x2[i], x2[I])
+		#yy2 = np.minimum(y2[i], y2[I])
 
-		width = np.maximum(0.0, xx2-xx1+1)
-		height = np.maximum(0.0, yy2-yy1+1)
+		width = np.maximum(0.0, np.minimum(x2[i], x2[I])-np.maximum(x1[i], x1[I])+1)
+		height = np.maximum(0.0, np.minimum(y2[i], y2[I])-np.maximum(y1[i], y1[I])+1)
 
 		overlap = (width*height).astype(np.float32)/area[I]
 		mask = overlap<overlap_threshold
@@ -238,7 +237,7 @@ def non_maximum_suppression(windows, overlap_threshold):
 	return windows[chosen]
 
 def heavy_classifier(window, classifier_list):
-	votes = np.zeros(len(window))
+	votes = 0
 	for classifier in classifier_list:
 		votes += classifier.predict(window)
 	return votes/len(classifier_list)
@@ -258,7 +257,7 @@ def scanForPedestriansSimple(img,classifier,deriv_kernel,norm_f,stride = 8):
 
 	dims = (int(img.shape[1]//1.2),int(img.shape[0]//1.2))
 	pyramid = [img]
-	canvas = np.copy(img)
+	windows = []
 
 	while dims[0] > 128 and dims[1] > 64:
 		blurred = cv2.GaussianBlur(pyramid[-1],ksize=(5,5), sigmaX = 0.6)
@@ -281,7 +280,7 @@ def scanForPedestriansSimple(img,classifier,deriv_kernel,norm_f,stride = 8):
 				window_norm_histograms = normalizeHistograms(histograms[i:i+16,j:j+8],norm_f=norm_f)
 
 				if classifier.predict([window_norm_histograms])[0]:
-					windows.append(np.array([j*8*scale,i*8*scale,(j*8+64)*scale, (i*8+128)*scale, confidence])) # coordinates x,y
+					windows.append(np.array([j*8*scale,i*8*scale,(j*8+64)*scale, (i*8+128)*scale, 1])) # coordinates x,y
 
 		scale *= 1.2
 
@@ -318,8 +317,7 @@ def scanForPedestriansNMS(img,classifier,deriv_kernel,norm_f,stride = 8):
 
 		scale *= 1.2
 
-	new_windows = non_maximum_suppression(np.asarray(windows), 0.3)
-	return new_windows
+	return non_maximum_suppression(np.asarray(windows), 0.3)
 
 def scanForPedestriansNMS_votes(img,list_classifiers,deriv_kernel,norm_f,stride = 8):
 
@@ -352,8 +350,7 @@ def scanForPedestriansNMS_votes(img,list_classifiers,deriv_kernel,norm_f,stride 
 
 		scale *= 1.2
 
-	new_windows = non_maximum_suppression(np.asarray(windows), 0.3)
-	return new_windows
+	return non_maximum_suppression(np.asarray(windows), 0.3)
 
 def scanForPedestriansNMS_filter(img,classifier,simple_classifier,deriv_kernel,norm_f,stride = 8):
 
@@ -382,15 +379,50 @@ def scanForPedestriansNMS_filter(img,classifier,simple_classifier,deriv_kernel,n
 				window_norm_histograms = normalizeHistograms(histograms[i:i+16,j:j+8],norm_f=norm_f)
 				prob = simple_classifier.predict_proba([window_norm_histograms])
 
-				if prob[0,1] > 0.5:
+				if prob[0,1] > 0.8:
 					confidence = classifier.decision_function([window_norm_histograms])[0]
 					if confidence > 0:
 						windows.append(np.array([j*8*scale,i*8*scale,(j*8+64)*scale, (i*8+128)*scale, confidence])) # coordinates x,y
 
 		scale *= 1.2
 
-	new_windows = non_maximum_suppression(np.asarray(windows), 0.3)
-	return new_windows
+	return non_maximum_suppression(np.asarray(windows), 0.3)
+
+def scanForPedestriansCompound(img,list_classifiers, simple_classiffier,deriv_kernel,norm_f, stride = 8):
+
+	dims = (int(img.shape[1]//1.2),int(img.shape[0]//1.2))
+	pyramid = [img]
+	windows = []
+
+	while dims[0] > 128 and dims[1] > 64:
+		blurred = cv2.GaussianBlur(pyramid[-1],ksize=(5,5), sigmaX = 0.6)
+		pyramid.append(cv2.resize(src=blurred,dsize=dims))
+		dims = (int(dims[0]//1.2),int(dims[1]//1.2))
+
+	scale = 1
+
+	for level in pyramid:
+		margin_r = int((level.shape[0] % 8) // 2)
+		margin_er = int((level.shape[0] % 8) - margin_r)
+		margin_c = int((level.shape[1] % 8) // 2)
+		margin_ec = int((level.shape[1] % 8) - margin_c)
+
+		magnitudes, angles = computeGradient(level[margin_r:level.shape[0]-margin_er,margin_c:level.shape[1]-margin_ec],*deriv_kernel)
+		histograms = computeCellHistograms(0,magnitudes,angles)
+		
+		for i in range(0,histograms.shape[0]-15):
+			for j in range(0,histograms.shape[1]-7):
+				window_norm_histograms = normalizeHistograms(histograms[i:i+16,j:j+8],norm_f=norm_f)
+				vote = heavy_classifier([window_norm_histograms], list_classifiers)
+				if vote > 0.5:
+					confidence = simple_classiffier.predict_proba([window_norm_histograms])
+					if confidence[0,1] > 0.8:
+						windows.append(np.array([j*8*scale,i*8*scale,(j*8+64)*scale, (i*8+128)*scale, confidence[0,1]])) # coordinates x,y
+
+		scale *= 1.2
+
+	return non_maximum_suppression(np.asarray(windows), 0.3)
+
 
 def main():
 
@@ -515,6 +547,7 @@ def main():
 		clasificador_svm_b = svm.LinearSVC( class_weight = 'balanced')
 		clasificador_svm_c = svm.LinearSVC( C = 0.01)
 		clasificador_svm_d = svm.LinearSVC()
+		clasificador_svm_dc = svm.LinearSVC(C = 0.005)
 
 		features_l1 = pickle.load(open("features_l1.pk", "rb"))
 		features_l1_test = pickle.load(open("features_l1_test.pk", "rb"))
@@ -567,6 +600,16 @@ def main():
 		print("Test time: %.5f sec, %.5f each" % (t1-t0, (t1-t0)/labels_test.shape[0]))
 		print(metrics.confusion_matrix(labels_test, prediccion_d))
 
+		clasificador_svm_dc.fit(features_l1,labels)
+		pickle.dump(clasificador_svm_dc, open("clasificador_dc_l1.pk", "wb"))
+		t0 = time.perf_counter()
+		prediccion_dc = clasificador_svm_dc.predict(features_l1_test)
+		t1 = time.perf_counter()
+		correct_answers_dc = np.sum(np.equal(prediccion_dc, labels_test))
+		print("Test L1 DC: %.5f" % (correct_answers_dc/len(prediccion_dc)))
+		print("Test time : %.5f sec, %.5f each" % (t1-t0, (t1-t0)/labels_test.shape[0]))
+		print(metrics.confusion_matrix(labels_test, prediccion_dc))
+
 		print("L2 -----------------------------------------------------")
 		clasificador_svm_a.fit(features_l2,labels)
 		pickle.dump(clasificador_svm_a, open("clasificador_a_l2.pk", "wb"))
@@ -608,6 +651,16 @@ def main():
 		print("Test L2 D: %.5f" % (correct_answers_d/len(prediccion_d)))
 		print("Test time: %.5f sec, %.5f each" % (t1-t0, (t1-t0)/labels_test.shape[0]))
 		print(metrics.confusion_matrix(labels_test, prediccion_d))
+
+		clasificador_svm_dc.fit(features_l2,labels)
+		pickle.dump(clasificador_svm_dc, open("clasificador_dc_l2.pk", "wb"))
+		t0 = time.perf_counter()
+		prediccion_dc = clasificador_svm_dc.predict(features_l2_test)
+		t1 = time.perf_counter()
+		correct_answers_dc = np.sum(np.equal(prediccion_dc, labels_test))
+		print("Test L2 DC: %.5f" % (correct_answers_dc/len(prediccion_dc)))
+		print("Test time: %.5f sec, %.5f each" % (t1-t0, (t1-t0)/labels_test.shape[0]))
+		print(metrics.confusion_matrix(labels_test, prediccion_dc))
 
 		print("L2_HYS --------------------------------------------------")
 		clasificador_svm_a.fit(features_l2_hys,labels)
@@ -651,13 +704,23 @@ def main():
 		print("Test time: %.5f sec, %.5f each" % (t1-t0, (t1-t0)/labels_test.shape[0]))
 		print(metrics.confusion_matrix(labels_test, prediccion_d))
 
+		clasificador_svm_dc.fit(features_l2_hys,labels)
+		pickle.dump(clasificador_svm_dc, open("clasificador_d_l2_hys.pk", "wb"))
+		t0 = time.perf_counter()
+		prediccion_dc = clasificador_svm_dc.predict(features_l2_hys_test)
+		t1 = time.perf_counter()
+		correct_answers_dc = np.sum(np.equal(prediccion_dc, labels_test))
+		print("Test L2 DC: %.5f" % (correct_answers_dc/len(prediccion_dc)))
+		print("Test time: %.5f sec, %.5f each" % (t1-t0, (t1-t0)/labels_test.shape[0]))
+		print(metrics.confusion_matrix(labels_test, prediccion_dc))
+
 	if second_test:
 		clasificador = pickle.load(open("clasificador_c_l2.pk","rb"))
 		test_image_path_1 = "../INRIAPerson/Test/pos/crop001573.png"
 		test_image_path_2 = "../INRIAPerson/Test/pos/crop001684.png"
 		test_image_path_3 = "../INRIAPerson/Test/pos/crop001670.png"
 		test_image_path_4 = "../INRIAPerson/Test/neg/no_person__no_bike_123.png"
-
+		
 
 		test_image = [cv2.imread(test_image_path_1)]
 		test_image.append(cv2.imread(test_image_path_2))
@@ -673,10 +736,10 @@ def main():
 			for win in result:
 				canvas = cv2.rectangle(canvas,(int(win[0]),int(win[1])),(int(win[2]),int(win[3])),(0,255,0))
 
-
+			
 			print("Simple   img%d: %.5f sec" % (i,t1-t0))
 			h.showMatrix([canvas], ["sin NMS"], grey= False, col= 1, row=1)
-
+			
 			t0 = time.perf_counter()
 			result = scanForPedestriansNMS(img, clasificador,(kx,ky),norm_2)
 			t1 = time.perf_counter()
@@ -685,11 +748,12 @@ def main():
 				canvas = cv2.rectangle(canvas,(int(win[0]),int(win[1])),(int(win[2]),int(win[3])),(0,255,0))
 			print("with NMS img%d: %.5f sec" % (i,t1-t0))
 			h.showMatrix([canvas], ["con NMS"], grey= False, col= 1, row=1)
-
+			
 			i+=1
 
 
 	if third_test:
+		print("3rd test---------------------------------------------")
 		clasificador = pickle.load(open("clasificador_c_l2.pk","rb"))
 		test_image_path_1 = "../INRIAPerson/Test/pos/crop001573.png"
 		test_image_path_2 = "../INRIAPerson/Test/pos/crop001684.png"
@@ -700,7 +764,7 @@ def main():
 		features_l2_test = pickle.load(open("features_l2_test.pk", "rb"))
 		labels = pickle.load(open("labels.pk", "rb"))
 		labels_test = pickle.load(open("labels_test.pk", "rb"))
-
+		
 		simple_classifier = linear_model.LogisticRegression()
 		simple_classifier.fit(features_l2, labels)
 
@@ -712,13 +776,27 @@ def main():
 
 
 		num_yes = np.sum(labels)
-		list_classifiers = train_classifier_set(features_l2[:num_yes], features_l2[num_yes:],11)
+		#list_classifiers = train_classifier_set(features_l2[:num_yes], features_l2[num_yes:],11)
+		
+		list_classifiers = pickle.load(open("classifier_list.pk", "rb"))
 
 		heavy_predict = np.rint(heavy_classifier(features_l2_test, list_classifiers))
 		correct_answers = np.sum(np.equal(heavy_predict, labels_test))
 		print("Test SVM vote: %.4f" % (correct_answers/len(heavy_predict)))
 		print(metrics.confusion_matrix(labels_test, heavy_predict))
+		
 		pickle.dump(list_classifiers, open("classifier_list.pk", "wb"))
+
+
+		#svm_gaussiano = svm.SVC(C = 1, class_weight = "balanced")
+		#svm_gaussiano.fit(features_l2, labels)
+		#pickle.dump(svm_gaussiano, open("clasificador_g_l2.pk", "wb"))
+		# svm_gaussiano = pickle.load(open("clasificador_g_l2.pk", "rb"))
+		#prediccion = svm_gaussiano.predict(features_l2_test)
+		#correct_answers = np.sum(np.equal(prediccion, labels_test))
+		#print("Test SVC : %.5f" % (correct_answers/len(prediccion)))
+		#print(metrics.confusion_matrix(labels_test, prediccion))
+
 
 		test_image = [cv2.imread(test_image_path_1)]
 		test_image.append(cv2.imread(test_image_path_2))
@@ -735,16 +813,25 @@ def main():
 				canvas = cv2.rectangle(canvas,(int(win[0]),int(win[1])),(int(win[2]),int(win[3])),(0,255,0))
 			print("LogReg   img%d: %.5f sec" % (i,t1-t0))
 			h.showMatrix([canvas], ["LogReg"], grey= False, col= 1, row=1)
+			
+			#t0 = time.perf_counter()
+			#result = scanForPedestriansNMS_votes(img, list_classifiers,(kx,ky),norm_2)
+			#t1 = time.perf_counter()
+			#canvas = np.copy(img)
+			#for win in result:
+			#	canvas = cv2.rectangle(canvas,(int(win[0]),int(win[1])),(int(win[2]),int(win[3])),(0,255,0))
+			#print("SVM vote img%d: %.5f sec" % (i,t1-t0))
+			#h.showMatrix([canvas], ["votes"], grey= False, col= 1, row=1)
 
 			t0 = time.perf_counter()
-			result = scanForPedestriansNMS_votes(img, list_classifiers,(kx,ky),norm_2)
+			result = scanForPedestriansCompound(img,list_classifiers, simple_classifier,(kx,ky),norm_2)
 			t1 = time.perf_counter()
 			canvas = np.copy(img)
 			for win in result:
 				canvas = cv2.rectangle(canvas,(int(win[0]),int(win[1])),(int(win[2]),int(win[3])),(0,255,0))
-			print("SVM vote img%d: %.5f sec" % (i,t1-t0))
+			print("Gaussiano img%d: %.5f sec" % (i,t1-t0))
 			h.showMatrix([canvas], ["votes"], grey= False, col= 1, row=1)
-
+			
 			i+=1
 
 
