@@ -65,7 +65,7 @@
 
 \newmintedfile[PasoTres]{python}{
     firstline=69,
-    lastline=86,
+    lastline=87,
     numbersep=5pt,
     gobble=0,
     frame=lines,
@@ -104,8 +104,8 @@
 }
 
 \newmintedfile[PasoCuatro]{python}{
-    firstline=90,
-    lastline=97,
+    firstline=91,
+    lastline=99,
     numbersep=5pt,
     gobble=0,
     frame=lines,
@@ -124,7 +124,7 @@
 }
 
 \newmintedfile[ExtraerCaracteristicas]{python}{
-    firstline=99,
+    firstline=101,
     lastline=135,
     numbersep=5pt,
     gobble=0,
@@ -134,8 +134,8 @@
 }
 
 \newmintedfile[EscaneoSimple]{python}{
-    firstline=257,
-    lastline=288,
+    firstline=231,
+    lastline=267,
     numbersep=5pt,
     gobble=0,
     frame=lines,
@@ -144,8 +144,8 @@
 }
 
 \newmintedfile[NMS]{python}{
-    firstline=208,
-    lastline=238,
+    firstline=188,
+    lastline=212,
     numbersep=5pt,
     gobble=0,
     frame=lines,
@@ -154,8 +154,8 @@
 }
 
 \newmintedfile[EscaneoNMS]{python}{
-    firstline=290,
-    lastline=322,
+    firstline=282,
+    lastline=305,
     numbersep=5pt,
     gobble=0,
     frame=lines,
@@ -164,8 +164,8 @@
 }
 
 \newmintedfile[EntrenamientoClasificadores]{python}{
-    firstline=246,
-    lastline=255,
+    firstline=220,
+    lastline=229,
     numbersep=5pt,
     gobble=0,
     frame=lines,
@@ -174,8 +174,8 @@
 }
 
 \newmintedfile[ClasificadorVotos]{python}{
-    firstline=240,
-    lastline=244,
+    firstline=214,
+    lastline=218,
     numbersep=5pt,
     gobble=0,
     frame=lines,
@@ -184,8 +184,8 @@
 }
 
 \newmintedfile[EscaneoVotos]{python}{
-    firstline=324,
-    lastline=356,
+    firstline=320,
+    lastline=343,
     numbersep=5pt,
     gobble=0,
     frame=lines,
@@ -361,7 +361,7 @@
             Tal como se mencionó anteriormente, las imágenes positivas ya incluidas en el conjunto de datos tienen un borde que incrementa un poco el tamaño, por lo que antes de procesar cada una hay que conocer cuánto vale ese borde para que \texttt{computeCellHistograms} trabaje sobre $64\times128$.
 
             \par
-            Llamaremos a esta función dos veces: una para crear los datos de entrenamiento y otra para crear los datos de test.
+            Llamaremos a esta función dos veces: una para crear los datos de entrenamiento y otra para crear los datos de test. En total, el conjunto de entrenamiento consta de 2416 ejemplos positivos y 12180 negativos; el conjunto de test tiene 1132 muestras positivas y 4530 negativas.
 
         \subsection{Selección del método de normalización de gradientes}
 
@@ -387,6 +387,7 @@
 					\hline
 
 				\end{tabular}
+                \caption{Precisión (aciertos frente al total de predicciones) con los distintos métodos de normalización.}
 
 			\end{table}
 
@@ -493,7 +494,7 @@
                 Ya que para cada ventana positiva habíamos guardado las coordenadas de sus esquinas superior izquierda e inferior derecha junto con su confianza, lo primero que hacemos es separar los datos para mayor claridad. Seguidamente, las ordenamos de mayor a menor confianza (nótese que \texttt{I} es un vector de índices) y calculamos sus áreas.
 
                 \par
-                Ahora comienza el proceso de descarte. En cada iteración seleccionamos la ventana con mayor confianza de entre las que quedan sin procesar y calculamos la proporción de su solapamiento con las demás (dividiendo entre sus áreas). Se guarda la ventana en cuestión y se eliminan todas aquellas que se superpongan más de un cierto umbral (fijado aquí a 0.3 mediante experimentación).
+                Ahora comienza el proceso de descarte. En cada iteración seleccionamos la ventana con mayor confianza de entre las que quedan sin procesar y calculamos la proporción de su solapamiento con las demás (dividiendo entre sus áreas). En caso de ocurrir alguna superposición, se guarda la ventana en cuestión y se eliminan todas aquellas que se superpongan más de un cierto umbral (fijado aquí a 0.3 mediante experimentación). El motivo de no guardar la ventana si ninguna otra se solapa con ella es que en el entorno de un peatón suele haber varias ventanas redundantes que lo detectan, por lo que de esta forma podemos descartar algunos falsos positivos.
 
                 \par
                 Como consecuencia de añadir la supresión de no máximos, el procedimiento de búsqueda se ve ligeramente alterado:
@@ -504,7 +505,7 @@
                 En la pregunta al clasificador hemos usado \texttt{decision\_function}, que devuelve la distancia al hiperplano separador, porque necesitamos medidas de confianza en las predicciones para utilizarlas en \texttt{non\_maximum\_suppression}. Si \texttt{decision\_function} da un valor mayor que 0, la muestra está en la clase positiva; si da menor que 0, está en la clase negativa.
 
                 \par
-                Como prueba del efecto que tiene la supresión de no máximos, comparemos los resultados anteriores con los obtenidos usando este filtro:
+                Como prueba del efecto que tiene la supresión de no máximos, comparemos los resultados anteriores (izquierda) con los obtenidos usando este filtro (derecha):
 
                 \begin{figure}[H]
 
@@ -512,56 +513,58 @@
 
     		        	\setlength{\fboxrule}{0pt}
                         \fbox{
-    						\begin{varwidth}{\textwidth}
-    							\centering
-    							\includegraphics[width=.46\textwidth]{SinNMS-1.jpg}
-    						\end{varwidth}
+    						\includegraphics[width=.46\textwidth]{SinNMS-1.jpg}
     					}
                         \fbox{
-    						\begin{varwidth}{\textwidth}
-    							\centering
-    							\includegraphics[width=.46\textwidth]{ConNMS-1.jpg}
-    						\end{varwidth}
+    						\includegraphics[width=.46\textwidth]{ConNMS-1.jpg}
     					}
+
+                    \end{center}
+
+                \end{figure}
+                \begin{figure}[H]
+
+    		        \begin{center}
+
+                        \setlength{\fboxrule}{0pt}
                         \fbox{
-    						\begin{varwidth}{\textwidth}
-    							\centering
-    							\includegraphics[width=.46\textwidth]{SinNMS-2.jpg}
-    						\end{varwidth}
+    						\includegraphics[width=.46\textwidth]{SinNMS-2.jpg}
     					}
     					\fbox{
-    						\begin{varwidth}{\textwidth}
-    							\centering
-    							\includegraphics[width=.46\textwidth]{ConNMS-2.jpg}
-    						\end{varwidth}
+    						\includegraphics[width=.46\textwidth]{ConNMS-2.jpg}
+    					}
+
+                    \end{center}
+
+                \end{figure}
+                \begin{figure}[H]
+
+    		        \begin{center}
+
+                        \setlength{\fboxrule}{0pt}
+                        \fbox{
+    						\includegraphics[width=.46\textwidth]{SinNMS-3.jpg}
     					}
                         \fbox{
-    						\begin{varwidth}{\textwidth}
-    							\centering
-    							\includegraphics[width=.46\textwidth]{SinNMS-3.jpg}
-    						\end{varwidth}
+    						\includegraphics[width=.46\textwidth]{ConNMS-3.jpg}
     					}
+
+                    \end{center}
+
+                \end{figure}
+                \begin{figure}[H]
+
+    		        \begin{center}
+
+                        \setlength{\fboxrule}{0pt}
                         \fbox{
-    						\begin{varwidth}{\textwidth}
-    							\centering
-    							\includegraphics[width=.46\textwidth]{ConNMS-3.jpg}
-    						\end{varwidth}
-    					}
-                        \fbox{
-    						\begin{varwidth}{\textwidth}
-    							\centering
-    							\includegraphics[width=.46\textwidth]{SinNMS-4.jpg}
-    						\end{varwidth}
+    						\includegraphics[width=.46\textwidth]{SinNMS-4.jpg}
     					}
     					\fbox{
-    						\begin{varwidth}{\textwidth}
-    							\centering
-    							\includegraphics[width=.46\textwidth]{ConNMS-4.jpg}
-    						\end{varwidth}
+    						\includegraphics[width=.46\textwidth]{ConNMS-4.jpg}
     					}
 
     				\end{center}
-    				\caption{Comparación de positivos en las 4 imágenes de muestra con y sin supresión de no máximos.}
 
     			\end{figure}
 
@@ -612,7 +615,7 @@
                 \ClasificadorVotos[label=.]{../pedestrian_detection.py}
 
                 \par
-                Finalmente, la función actualizada queda de la siguiente manera:
+                Finalmente, actualizamos la parte del código en la que buscamos ocurrencias de peatones:
 
                 \EscaneoVotos[label=.]{../pedestrian_detection.py}
 
@@ -620,7 +623,7 @@
                 Como vemos, el único cambio es que la clasificación ahora toma en cuenta el voto por mayoría, siendo afirmativo en caso de que su proporción supere el 50\%.
 
                 \par
-                Comparemos ahora los nuevos resultados con los obtenidos en la supresión de no máximos:
+                Comparemos ahora los nuevos resultados (izquierda) con los obtenidos en la supresión de no máximos (derecha):
 
                 \begin{figure}[H]
 
@@ -628,56 +631,58 @@
 
     		        	\setlength{\fboxrule}{0pt}
                         \fbox{
-    						\begin{varwidth}{\textwidth}
-    							\centering
-    							\includegraphics[width=.46\textwidth]{ConVotos-1.jpg}
-    						\end{varwidth}
+    						\includegraphics[width=.46\textwidth]{ConVotos-1.jpg}
     					}
                         \fbox{
-    						\begin{varwidth}{\textwidth}
-    							\centering
-    							\includegraphics[width=.46\textwidth]{ConNMS-1.jpg}
-    						\end{varwidth}
+    						\includegraphics[width=.46\textwidth]{ConNMS-1.jpg}
     					}
+
+                    \end{center}
+
+                \end{figure}
+                \begin{figure}[H]
+
+    		        \begin{center}
+
+                        \setlength{\fboxrule}{0pt}
                         \fbox{
-    						\begin{varwidth}{\textwidth}
-    							\centering
-    							\includegraphics[width=.46\textwidth]{ConVotos-2.jpg}
-    						\end{varwidth}
+    						\includegraphics[width=.46\textwidth]{ConVotos-2.jpg}
     					}
     					\fbox{
-    						\begin{varwidth}{\textwidth}
-    							\centering
-    							\includegraphics[width=.46\textwidth]{ConNMS-2.jpg}
-    						\end{varwidth}
+    						\includegraphics[width=.46\textwidth]{ConNMS-2.jpg}
+    					}
+
+                    \end{center}
+
+                \end{figure}
+                \begin{figure}[H]
+
+    		        \begin{center}
+
+                        \setlength{\fboxrule}{0pt}
+                        \fbox{
+    						\includegraphics[width=.46\textwidth]{ConVotos-3.jpg}
     					}
                         \fbox{
-    						\begin{varwidth}{\textwidth}
-    							\centering
-    							\includegraphics[width=.46\textwidth]{ConVotos-3.jpg}
-    						\end{varwidth}
+    						\includegraphics[width=.46\textwidth]{ConNMS-3.jpg}
     					}
+
+                    \end{center}
+
+                \end{figure}
+                \begin{figure}[H]
+
+    		        \begin{center}
+
+                        \setlength{\fboxrule}{0pt}
                         \fbox{
-    						\begin{varwidth}{\textwidth}
-    							\centering
-    							\includegraphics[width=.46\textwidth]{ConNMS-3.jpg}
-    						\end{varwidth}
-    					}
-                        \fbox{
-    						\begin{varwidth}{\textwidth}
-    							\centering
-    							\includegraphics[width=.46\textwidth]{ConVotos-4.jpg}
-    						\end{varwidth}
+    						\includegraphics[width=.46\textwidth]{ConVotos-4.jpg}
     					}
     					\fbox{
-    						\begin{varwidth}{\textwidth}
-    							\centering
-    							\includegraphics[width=.46\textwidth]{ConNMS-4.jpg}
-    						\end{varwidth}
+    						\includegraphics[width=.46\textwidth]{ConNMS-4.jpg}
     					}
 
     				\end{center}
-    				\caption{Comparación de resultados con votos (izquierda) y sin votos (derecha).}
 
     			\end{figure}
 
@@ -693,7 +698,7 @@
                 La librería \texttt{scikit-learn} contiene varias formas de utilizar un modelo \textit{SVM}. La implementación más eficiente y escalable no ofrece la posibilidad de devolver la confianza (en tanto por 1) de la predicción, por lo que sólo podríamos usar la implementación más lenta, que sí tiene tal funcionalidad.
 
                 \par
-                Sin embargo, realizando pruebas obtenemos que una regresión logística tiene un acierto del 98.6\% en test, muy similar a nuestro mejor resultado.
+                Sin embargo, realizando pruebas obtenemos que una regresión logística tiene un acierto del 98.6\% en test, muy similar a nuestro mejor resultado. Además, permite preguntar por probabilidades, por lo que lo usaremos como filtro con un umbral superior a 0.5 (el estándar).
 
 
 
