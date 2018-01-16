@@ -146,7 +146,6 @@ def extractNegativeWindows(path, dst_path):
 def non_maximum_suppression(windows, overlap_threshold):
 	if not len(windows):
 		return np.array([])
-
 	# windows[:,0], windows[:,1] contain x,y of top left corner
 	# windows[:,2], windows[:,3] contain x,y of bottom right corner
 	I = np.argsort(windows[:,4])[::-1]
@@ -160,10 +159,8 @@ def non_maximum_suppression(windows, overlap_threshold):
 			np.maximum(windows[i,0], windows[I,0])+1)
 		height = np.maximum(0.0, np.minimum(windows[i,3], windows[I,3])-
 			np.maximum(windows[i,1], windows[I,1])+1)
-
 		overlap = (width*height).astype(np.float32)/area[I]
 		mask = overlap<overlap_threshold
-
 		I = I[mask]
 		if mask.shape[0]-np.sum(mask) > 1 :
 			chosen.append(i)

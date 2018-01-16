@@ -16,7 +16,7 @@
 
 \setlength{\oddsidemargin}{18pt}
 \setlength{\headheight}{14pt}
-\setlength{\textheight}{672pt}
+\setlength{\textheight}{680pt}
 \setlength{\marginparsep}{11pt}
 \setlength{\footskip}{30pt}
 \hoffset = 0pt
@@ -150,8 +150,8 @@
 }
 
 \newmintedfile[EscaneoSimple]{python}{
-    firstline=188,
-    lastline=225,
+    firstline=186,
+    lastline=222,
     numbersep=5pt,
     gobble=0,
     frame=lines,
@@ -161,7 +161,7 @@
 
 \newmintedfile[NMS]{python}{
     firstline=146,
-    lastline=170,
+    lastline=167,
     numbersep=5pt,
     gobble=0,
     frame=lines,
@@ -170,8 +170,8 @@
 }
 
 \newmintedfile[EscaneoNMS]{python}{
-    firstline=240,
-    lastline=263,
+    firstline=237,
+    lastline=260,
     numbersep=5pt,
     gobble=0,
     frame=lines,
@@ -180,8 +180,8 @@
 }
 
 \newmintedfile[EntrenamientoClasificadores]{python}{
-    firstline=178,
-    lastline=187,
+    firstline=175,
+    lastline=184,
     numbersep=5pt,
     gobble=0,
     frame=lines,
@@ -190,8 +190,8 @@
 }
 
 \newmintedfile[ClasificadorVotos]{python}{
-    firstline=172,
-    lastline=176,
+    firstline=169,
+    lastline=173,
     numbersep=5pt,
     gobble=0,
     frame=lines,
@@ -200,8 +200,8 @@
 }
 
 \newmintedfile[EscaneoVotos]{python}{
-    firstline=289,
-    lastline=297,
+    firstline=286,
+    lastline=294,
     numbersep=5pt,
     gobble=0,
     frame=lines,
@@ -210,8 +210,8 @@
 }
 
 \newmintedfile[EscaneoFiltro]{python}{
-    firstline=328,
-    lastline=339,
+    firstline=325,
+    lastline=336,
     numbersep=5pt,
     gobble=0,
     frame=lines,
@@ -469,7 +469,7 @@
             A continuación, nos centraremos en cada nivel de la pirámide haciendo lo siguiente: tras ajustar el tamaño para que no sobren píxeles al pasear la ventana, calculamos los histogramas de toda la imagen; para cada posición posible, normalizamos los histogramas de sus celdas (obteniendo así sus características) y preguntamos al clasificador; si responde positivamente, será guardada en su localización y proporción respecto a la imagen original.
 
             \par
-            Algunos resultados de la ejecución se ven en la siguiente figura:
+            Algunos resultados de la ejecución se ven a continuación:
 
             \vspace{0.3cm}
 
@@ -490,6 +490,15 @@
 							\includegraphics[width=.46\textwidth]{SinNMS-2.jpg}
 						\end{varwidth}
 					}
+
+				\end{center}
+
+			\end{figure}
+            \begin{figure}[H]
+
+                \begin{center}
+
+                    \setlength{\fboxrule}{0pt}
                     \fbox{
 						\begin{varwidth}{\textwidth}
 							\centering
@@ -504,7 +513,6 @@
 					}
 
 				\end{center}
-				\caption{Positivos encontrados en 4 imágenes de muestra.}
 
 			\end{figure}
 
@@ -514,15 +522,15 @@
             \subsubsection{Supresión de no máximos}
 
                 \par
-                Aunque no arreglará el problema de la calidad del modelo, una alternativa para descartar muchos de los falsos positivos es la supresión de no máximos (\textit{NMS}). La idea aquí es aprovechar el grado de confianza del clasificador en que una ventana contenga un peatón y descartar todas aquéllas que se solapen en cierta medida con una de mayor confianza. Veamos cómo hacer esto:
+                Aunque no arreglará el problema de la calidad del modelo, una alternativa para descartar muchas de las ventanas redundantes es la supresión de no máximos \footnote{Según la implementación de \textit{Tomasz Malisiewicz} encontrada en su \href{http://www.computervisionblog.com/2011/08/blazing-fast-nmsm-from-exemplar-svm.html}{blog personal}} (\textit{NMS}). La idea aquí es aprovechar el grado de confianza del clasificador en que una ventana contenga un peatón y descartar todas aquéllas que se solapen en cierta medida con una de mayor confianza. Veamos cómo hacer esto:
 
                 \NMS[label=.]{../pedestrian_detection.py}
 
                 \par
-                Ya que para cada ventana positiva habíamos guardado las coordenadas de sus esquinas superior izquierda e inferior derecha junto con su confianza, lo primero que hacemos es separar los datos para mayor claridad. Seguidamente, las ordenamos de mayor a menor confianza (nótese que \texttt{I} es un vector de índices) y calculamos sus áreas.
+                Inicialmente aprovechamos los valores de confianza de las ventanas para ordenarlas de mayor a menor (nótese que \texttt{I} es un vector de índices) y calculamos también sus áreas.
 
                 \par
-                Ahora comienza el proceso de descarte. En cada iteración seleccionamos la ventana con mayor confianza de entre las que quedan sin procesar y calculamos la proporción de su solapamiento con las demás (dividiendo entre sus áreas). En caso de ocurrir alguna superposición, se guarda la ventana en cuestión y se eliminan todas aquellas que se superpongan más de un cierto umbral (fijado aquí a 0.3 mediante experimentación). El motivo de no guardar la ventana si ninguna otra se solapa con ella es que en el entorno de un peatón suele haber varias ventanas redundantes que lo detectan, por lo que de esta forma podemos descartar algunos falsos positivos.
+                Ahora comienza el proceso de descarte. En cada iteración seleccionamos la ventana con mayor confianza de entre las que quedan sin procesar y calculamos la proporción de su solapamiento con las demás (dividiendo entre sus áreas). En caso de ocurrir alguna superposición, se guarda la ventana en cuestión y se eliminan todas aquellas que se superpongan más de un cierto umbral (fijado aquí a 0.3 mediante experimentación). El motivo de no guardar la ventana si ninguna otra se solapa con ella (no incluido en la idea de base) es que en el entorno de un peatón suele haber varias ventanas redundantes que lo detectan, por lo que de esta forma podemos descartar algunos falsos positivos.
 
                 \par
                 Como consecuencia de añadir la supresión de no máximos, el procedimiento de búsqueda se ve ligeramente alterado:
@@ -530,7 +538,7 @@
                 \EscaneoNMS[label=.]{../pedestrian_detection.py}
 
                 \par
-                En la pregunta al clasificador hemos usado \texttt{decision\_function}, que devuelve la distancia al hiperplano separador, porque necesitamos medidas de confianza en las predicciones para utilizarlas en \texttt{non\_maximum\_suppression}. Si \texttt{decision\_function} da un valor mayor que 0, la muestra está en la clase positiva; si da menor que 0, está en la clase negativa.
+                En la pregunta al clasificador hemos usado \texttt{decision\_function}, que devuelve la distancia al hiperplano separador, porque necesitamos medidas de confianza en las predicciones para utilizarlas en \texttt{non\_maximum\_suppression}. Si \texttt{decision\_function} da un valor mayor que 0, la muestra está en la clase positiva; si da menor que 0, está en la clase negativa. Cabe mencionar que, cuanto más lejos esté un valor del hiperplano, más seguros podemos estar de que pertenece a la clase correspondiente.
 
                 \par
                 Como prueba del efecto que tiene la supresión de no máximos, comparemos los resultados anteriores (izquierda) con los obtenidos usando este filtro (derecha):
@@ -546,45 +554,18 @@
                         \fbox{
     						\includegraphics[width=.46\textwidth]{ConNMS-1.jpg}
     					}
-
-                    \end{center}
-
-                \end{figure}
-                \begin{figure}[H]
-
-    		        \begin{center}
-
-                        \setlength{\fboxrule}{0pt}
                         \fbox{
     						\includegraphics[width=.46\textwidth]{SinNMS-2.jpg}
     					}
     					\fbox{
     						\includegraphics[width=.46\textwidth]{ConNMS-2.jpg}
     					}
-
-                    \end{center}
-
-                \end{figure}
-                \begin{figure}[H]
-
-    		        \begin{center}
-
-                        \setlength{\fboxrule}{0pt}
                         \fbox{
     						\includegraphics[width=.46\textwidth]{SinNMS-3.jpg}
     					}
                         \fbox{
     						\includegraphics[width=.46\textwidth]{ConNMS-3.jpg}
     					}
-
-                    \end{center}
-
-                \end{figure}
-                \begin{figure}[H]
-
-    		        \begin{center}
-
-                        \setlength{\fboxrule}{0pt}
                         \fbox{
     						\includegraphics[width=.46\textwidth]{SinNMS-4.jpg}
     					}
@@ -595,6 +576,8 @@
     				\end{center}
 
     			\end{figure}
+
+\newpage
 
                 \par
                 De lo anterior podemos concluir que la supresión de no máximos es de gran ayuda, pero que la utilidad del proceso que realiza depende del modelo. En nuestro caso, aún queda un número notable de imprecisiones.
@@ -642,6 +625,8 @@
 
                 \ClasificadorVotos[label=.]{../pedestrian_detection.py}
 
+\newpage
+
                 \par
                 Finalmente, actualizamos la parte del código en la que buscamos ocurrencias de peatones:
 
@@ -664,15 +649,6 @@
                         \fbox{
     						\includegraphics[width=.46\textwidth]{ConNMS-1.jpg}
     					}
-
-                    \end{center}
-
-                \end{figure}
-                \begin{figure}[H]
-
-    		        \begin{center}
-
-                        \setlength{\fboxrule}{0pt}
                         \fbox{
     						\includegraphics[width=.46\textwidth]{ConVotos-2.jpg}
     					}
@@ -694,15 +670,6 @@
                         \fbox{
     						\includegraphics[width=.46\textwidth]{ConNMS-3.jpg}
     					}
-
-                    \end{center}
-
-                \end{figure}
-                \begin{figure}[H]
-
-    		        \begin{center}
-
-                        \setlength{\fboxrule}{0pt}
                         \fbox{
     						\includegraphics[width=.46\textwidth]{ConVotos-4.jpg}
     					}
@@ -726,10 +693,12 @@
                 La librería \texttt{scikit-learn} contiene varias formas de utilizar un modelo \textit{SVM}. La implementación más eficiente y escalable no ofrece la posibilidad de devolver la confianza (en tanto por 1) de la predicción, por lo que sólo podríamos usar la implementación más lenta, que sí tiene tal funcionalidad.
 
                 \par
-                Sin embargo, realizando pruebas obtenemos que una regresión logística tiene un acierto del 98.6\% en test, muy similar a nuestro mejor resultado. Además, permite preguntar por probabilidades, por lo que lo usaremos como filtro con un umbral superior a 0.5 (el estándar).
+                Sin embargo, realizando pruebas obtenemos que una regresión logística tiene un acierto del 98.6\% en test, muy similar a nuestro mejor resultado. Además, permite obtener la asignación de probabilidades de cada clase, por lo que lo usaremos como filtro con un umbral superior a 0.5 (el estándar).
 
                 \par
                 Para hacer esto, sólo tenemos que volver a cambiar la misma sección de código que antes: añadiremos un condicional que sólo evaluará la ventana con el \textit{SVM} si pasa el filtro del 80\% de confianza de la regresión logística. Si el \textit{SVM} también responde afirmativamente, guardaremos la ventana.
+
+\newpage
 
                 \EscaneoFiltro[label=.]{../pedestrian_detection.py}
 
@@ -747,30 +716,12 @@
                         \fbox{
     						\includegraphics[width=.46\textwidth]{ConNMS-1.jpg}
     					}
-
-                    \end{center}
-
-                \end{figure}
-                \begin{figure}[H]
-
-    		        \begin{center}
-
-                        \setlength{\fboxrule}{0pt}
                         \fbox{
     						\includegraphics[width=.46\textwidth]{ConLogReg-2.jpg}
     					}
     					\fbox{
     						\includegraphics[width=.46\textwidth]{ConNMS-2.jpg}
     					}
-
-                    \end{center}
-
-                \end{figure}
-                \begin{figure}[H]
-
-    		        \begin{center}
-
-                        \setlength{\fboxrule}{0pt}
                         \fbox{
     						\includegraphics[width=.46\textwidth]{ConLogReg-3.jpg}
     					}
@@ -803,7 +754,7 @@
             \subsubsection{Estudio de las alternativas propuestas}
 
                 \par
-                Dejando aparte la supresión de no máximos, cuya utilidad es evidente pero no influye en la calidad de la clasificación, vamos poner lado a lado las matrices de confusión del modelo original, de la alternativa por votos en mayoría simple y de la opción de incremento de umbral:
+                Dejando a un lado la supresión de no máximos, cuya utilidad es evidente pero no influye en la calidad de la clasificación, vamos a ver las matrices de confusión del modelo original, de la alternativa por votos en mayoría simple y de la opción de incremento de umbral:
 
                 \begin{figure}[H]
                     \begin{center}
@@ -872,5 +823,22 @@
 
                 \par
                 En nuestro caso, ya que no tenemos información específica acerca del contexto donde se aplicaría el modelo, vamos a elegir el que proporciona una mayor tasa de acierto, el \textit{SVM} simple.
+
+    \section{Conclusiones}
+
+        \par
+        La técnica de \textbf{Histograma de Gradientes}, aunque ya existía anteriormente, supuso un avance notable en la detección de personas a partir de la publicación del artículo en el que se basa este trabajo. Hemos podido comprobar que alcanza una alta tasa de acierto, si bien aún tiene limitaciones en su aplicación práctica.
+
+        \par
+        Algunas de estas limitaciones vienen dadas por la implementación, realizada en un lenguaje de alto nivel y de propósito general como \texttt{Python}. En nuestras pruebas se puede observar un tiempo de ejecución notablemente alto, nada adecuado para aplicaciones con requisitos de tiempo real.
+
+        \par
+        Asimismo, una buena selección de zonas prometedoras aceleraría el proceso, evitando una búsqueda exhaustiva que escala de forma cuadrática con el tamaño de la imagen.
+
+        \par
+        Por otra parte, y como se está comprobando en los últimos años, parece existir un límite en la calidad de las características que puede extraer un ser humano, viéndose mejores resultados cuando se emplean redes neuronales artificiales para este fin.
+
+        \par
+        Sin embargo, una vez enumeradas algunas razones por las que se podría complicar su aplicación real, es destacable la alta tasa de acierto lograda con clasificadores sencillos (más del 98\%); incluso, con un poco de elaboración posterior a la clasificación, podemos ver resultados aproximados. Parece ser, pues, que una distribución de gradientes es lo suficientemente informativa a la vez que compacta como para permitir ajustes de cierta calidad con poco esfuerzo.
 
 \end{document}
