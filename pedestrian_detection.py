@@ -94,7 +94,7 @@ def normalizeHistograms(histograms, norm_f = norm_2, block_size = 2,
 	normalized = []
 	for i in range(0,histograms.shape[0]-block_size+1, step):
 		for j in range(0,histograms.shape[1]-block_size+1, step):
-			normalized.extend((norm_f(histograms[i:i+block_size, 
+			normalized.extend((norm_f(histograms[i:i+block_size,
 				j:j+block_size].flatten())))
 	return np.asarray(normalized)
 
@@ -142,48 +142,6 @@ def extractNegativeWindows(path, dst_path):
 			f = random.randint(0,img.shape[0]-128)
 			c = random.randint(0,img.shape[1]-64)
 			cv2.imwrite(dst_path+"/"+str(i)+"_"+name, img[f:f+128,c:c+64])
-
-def scanForPedestrians(img, classifiers, simple_classifier, 
-						deriv_kernel, norm_f, stride = 8):
-
-	dims = (int(img.shape[1]//1.2),int(img.shape[0]//1.2))
-	pyramid = [img]
-	windows = []
-
-	while dims[0] > 128 and dims[1] > 64:
-		blurred = cv2.GaussianBlur(pyramid[-1],ksize=(5,5), sigmaX = 0.6)
-		pyramid.append(cv2.resize(src=blurred,dsize=dims))
-		dims = (int(dims[0]//1.2),int(dims[1]//1.2))
-
-	scale = 1
-	
-	for level in pyramid:
-		# Margin in each side: top, bottom, left, right
-		mt = int((level.shape[0] % 8) // 2)
-		mb = int((level.shape[0] % 8) - mt)
-		ml = int((level.shape[1] % 8) // 2)
-		mr = int((level.shape[1] % 8) - ml)
-
-		magnitudes, angles = computeGradient(level[mt:level.shape[0]-mb,
-									ml:level.shape[1]-mr],*deriv_kernel)
-		histograms = computeCellHistograms(0,magnitudes,angles)
-
-		for i in range(0,histograms.shape[0]-15):
-			for j in range(0,histograms.shape[1]-7):
-				window_features = normalizeHistograms(histograms[i:i+16,j:j+8],
-					norm_f=norm_f)
-				prob = simple_classifier.predict_proba([window_features])
-				if prob[0,1] > 0.8:
-					confidence = heavy_classifier([window_features], 
-													classifiers)
-					if confidence > 0.5:
-						# coordinates x,y
-						windows.append(np.array([j*8*scale,i*8*scale,
-						(j*8+64)*scale, (i*8+128)*scale, confidence])) 
-
-		scale *= 1.2
-
-	return non_maximum_suppression(np.asarray(windows), 0.3)
 
 def non_maximum_suppression(windows, overlap_threshold):
 	if not len(windows):
@@ -260,7 +218,7 @@ def scanForPedestriansSimple(img,classifier,deriv_kernel,norm_f,stride = 8):
 				if classifier.predict([window_features])[0]:
 					# coordinates x,y
 					windows.append(np.array([j*8*scale,i*8*scale,
-					(j*8+64)*scale, (i*8+128)*scale, 1])) 
+					(j*8+64)*scale, (i*8+128)*scale, 1]))
 
 		scale *= 1.2
 
@@ -298,7 +256,7 @@ def scanForPedestriansNMS(img,classifier,deriv_kernel,norm_f,stride = 8):
 				if confidence > 0:
 					# coordinates x,y
 					windows.append(np.array([j*8*scale,i*8*scale,
-					(j*8+64)*scale, (i*8+128)*scale, confidence])) 
+					(j*8+64)*scale, (i*8+128)*scale, confidence]))
 
 		scale *= 1.2
 
@@ -378,13 +336,13 @@ def scanForPedestriansNMS_filter(img, classifier, simple_classifier,
 					if conf > 0:
 						# coordinates x,y
 						windows.append(np.array([j*8*scale,i*8*scale,
-						(j*8+64)*scale, (i*8+128)*scale, conf])) 
+						(j*8+64)*scale, (i*8+128)*scale, conf]))
 
 		scale *= 1.2
 
 	return non_maximum_suppression(np.asarray(windows), 0.3)
 
-def showClassifierStats(features_train, labels_train, features_test, 
+def showClassifierStats(features_train, labels_train, features_test,
 		labels_test, classifier, name_classifier, name_norm):
 	classifier.fit(features_l1,labels)
 	t0 = time.perf_counter()
@@ -397,7 +355,7 @@ def showClassifierStats(features_train, labels_train, features_test,
 
 	return classifier
 
-def showStatAndResultFromScan(img, scanning, classifier, kernel, norm, 
+def showStatAndResultFromScan(img, scanning, classifier, kernel, norm,
 						img_id, name = "", second_classifier = None):
 	if second_classifier == None:
 		t0 = time.perf_counter()
@@ -407,12 +365,12 @@ def showStatAndResultFromScan(img, scanning, classifier, kernel, norm,
 		t0 = time.perf_counter()
 		result = scanning(img, classifier, second_classifier ,kernel,norm)
 		t1 = time.perf_counter()
-	
+
 	canvas = np.copy(img)
 	for win in result:
 		canvas = cv2.rectangle(canvas,(int(win[0]),int(win[1])),(int(win[2]),int(win[3])),(0,255,0))
 
-	
+
 	print("%s img%d: %.5f sec" % (name, img_id, t1-t0))
 	h.showMatrix([canvas], [name], grey= False, col= 1, row=1)
 
@@ -420,7 +378,7 @@ def main():
 
 	pos_train_path = "../INRIAPerson/96X160H96/Train/pos"
 	neg_train_path = "../INRIAPerson/96X160H96/Train/neg"
-	
+
 	pos_test_path = "../INRIAPerson/70X134H96/Test/pos"
 	neg_test_path = "../INRIAPerson/70X134H96/Test/neg"
 
@@ -433,7 +391,7 @@ def main():
 
 	features_l1, labels = obtainDataFeatures((kx,ky), pos_train_path, neg_train_path, norm_1)
 	features_l1_test, labels_test = obtainDataFeatures((kx,ky), pos_test_path, neg_test_path, norm_1)
-	
+
 	features_l2, _ = obtainDataFeatures((kx,ky), pos_train_path, neg_train_path, norm_2)
 	features_l2_test, _ = obtainDataFeatures((kx,ky), pos_test_path, neg_test_path, norm_2)
 
@@ -445,17 +403,17 @@ def main():
 	clasificador_svm.append(svm.LinearSVC( C = 0.01))
 	clasificador_svm.append(svm.LinearSVC())
 	nombres = ["A", "B", "C", "D"]
-	
+
 	clasificador_svm_l1 = []
 	for i in range(len(clasificador_svm)):
 		clasificador_svm_l1.append(showClassifierStats(features_l1, labels,
 			features_l1_test, labels_test, clasificador_svm[i], nombres[i], "L1"))
-	
+
 	clasificador_svm_l2 = []
 	for i in range(len(clasificador_svm)):
 		clasificador_svm_l2.append(showClassifierStats(features_l2, labels,
 			features_l2_test, labels_test, clasificador_svm[i], nombres[i], "L2"))
-	
+
 	clasificador_svm_l2_hys = []
 	for i in range(len(clasificador_svm)):
 		clasificador_svm_l2_hys.append(showClassifierStats(features_l2_hys, labels,
@@ -489,13 +447,13 @@ def main():
 	correct_answers = np.sum(np.equal(heavy_predict, labels_test))
 	print("Test SVM vote: %.4f" % (correct_answers/len(heavy_predict)))
 	print(metrics.confusion_matrix(labels_test, heavy_predict))
-	
+
 	# Test images
 	test_image_path_1 = "../INRIAPerson/Test/pos/crop001573.png"
 	test_image_path_2 = "../INRIAPerson/Test/pos/crop001684.png"
 	test_image_path_3 = "../INRIAPerson/Test/pos/crop001670.png"
 	test_image_path_4 = "../INRIAPerson/Test/neg/no_person__no_bike_123.png"
-		
+
 	test_image = [cv2.imread(test_image_path_1)]
 	test_image.append(cv2.imread(test_image_path_2))
 	test_image.append(cv2.imread(test_image_path_3))
@@ -514,7 +472,7 @@ def main():
 
 		showStatAndResultFromScan(img, scanForPedestriansNMS_votes, classifiers,
 			(kx,ky), norm_2, i, "votación SVM con NMS")
-		
+
 		i+=1
 
 if __name__ == "__main__":
