@@ -42,6 +42,22 @@
 }
 
 \newcommand{\horrule}[1]{\rule{\linewidth}{#1}}
+\newcolumntype{M}[1]{>{\centering\arraybackslash}m{#1}}
+\newcommand\MyBox[1]{
+    \fbox{\lower0.75cm
+        \vbox to 1.3cm{\vfil
+            \hbox to 1.3cm{\hfil\parbox{1.1cm}{\centering#1}\hfil}
+        \vfil}
+    }
+}
+\newcommand\MyOtherBox[1]{
+    \setlength{\fboxrule}{0pt}
+    \fbox{\lower0.75cm
+        \vbox to 1.3cm{\vfil
+            \hbox to 0.5cm{\hspace{0.6cm}\centering#1}
+        \vfil}
+    }
+}
 
 \newmintedfile[PasoUno]{python}{
     firstline=26,
@@ -134,8 +150,8 @@
 }
 
 \newmintedfile[EscaneoSimple]{python}{
-    firstline=231,
-    lastline=267,
+    firstline=188,
+    lastline=225,
     numbersep=5pt,
     gobble=0,
     frame=lines,
@@ -144,8 +160,8 @@
 }
 
 \newmintedfile[NMS]{python}{
-    firstline=188,
-    lastline=212,
+    firstline=146,
+    lastline=170,
     numbersep=5pt,
     gobble=0,
     frame=lines,
@@ -154,8 +170,8 @@
 }
 
 \newmintedfile[EscaneoNMS]{python}{
-    firstline=282,
-    lastline=305,
+    firstline=240,
+    lastline=263,
     numbersep=5pt,
     gobble=0,
     frame=lines,
@@ -164,8 +180,8 @@
 }
 
 \newmintedfile[EntrenamientoClasificadores]{python}{
-    firstline=220,
-    lastline=229,
+    firstline=178,
+    lastline=187,
     numbersep=5pt,
     gobble=0,
     frame=lines,
@@ -174,8 +190,8 @@
 }
 
 \newmintedfile[ClasificadorVotos]{python}{
-    firstline=214,
-    lastline=218,
+    firstline=172,
+    lastline=176,
     numbersep=5pt,
     gobble=0,
     frame=lines,
@@ -184,8 +200,18 @@
 }
 
 \newmintedfile[EscaneoVotos]{python}{
-    firstline=320,
-    lastline=343,
+    firstline=289,
+    lastline=297,
+    numbersep=5pt,
+    gobble=0,
+    frame=lines,
+    framesep=2mm,
+    tabsize=3,
+}
+
+\newmintedfile[EscaneoFiltro]{python}{
+    firstline=328,
+    lastline=339,
     numbersep=5pt,
     gobble=0,
     frame=lines,
@@ -256,7 +282,7 @@
         \subsection{Cálculo de gradientes}
 
             \par
-            El primer paso del proceso es calcular los gradientes horizontales y verticales de cada imagen. Para ello, utilizaremos un \textit{kernel} unidimensional $\left[-1,0,1\right]$ centrado en cada píxel a evaluar.
+            El primer paso del proceso es calcular los gradientes horizontales y verticales de cada imagen. Para ello, utilizaremos un \textit{kernel} unidimensional $\left[-1,0,1\right]$ centrado en cada píxel a evaluar, guiándonos por los resultados experimentales del \textit{paper} original.
 
             \par
             Utilizando los valores anteriores obtendremos las orientaciones de los cambios de intensidad y sus magnitudes. Posteriormente, ya que las imágenes son a color, elegiremos el canal con mayor magnitud de gradiente para cada píxel.
@@ -336,6 +362,8 @@
 
             \par
             La función recibe como parámetro el conjunto de histogramas, así como la normalización que aplicará, el tamaño de los bloques y el solapamiento entre los mismos. Tras calcular el intervalo entre cada par de bloques, los recorremos y añadimos cada conjunto resultante de histogramas normalizados al vector de características de la imagen.
+
+\newpage
 
     \section{Detección de peatones}
 
@@ -581,7 +609,7 @@
     				\begin{tabular}{| >{\centering\arraybackslash}m{0.9in} | >{\centering\arraybackslash}m{1in} | >{\centering\arraybackslash}m{1in} | >{\centering\arraybackslash}m{1in} | >{\centering\arraybackslash}m{1in} |}
 
     					\hline
-    					\textbf{Imagen} & \textbf{Tiempo original (s)} & \textbf{Tiempo \textit{NMS} (s)} & \textbf{Tiempo original + dibujado (s)} & \textbf{Tiempo \textit{NMS} + dibujado (s)}\\
+    					\textbf{Imagen} & \textbf{Tiempo original (s)} & \textbf{Tiempo \textit{NMS} (s)} & \textbf{Tiempo original + dibujado (s)} & \textbf{Tiempo \textit{NMS} + dibujado (s)} \\
     					\hline
     					Imagen 1 & 65.83891 & 66.18080 & 70.66711 & 70.39946 \\
     					\hline
@@ -700,8 +728,149 @@
                 \par
                 Sin embargo, realizando pruebas obtenemos que una regresión logística tiene un acierto del 98.6\% en test, muy similar a nuestro mejor resultado. Además, permite preguntar por probabilidades, por lo que lo usaremos como filtro con un umbral superior a 0.5 (el estándar).
 
+                \par
+                Para hacer esto, sólo tenemos que volver a cambiar la misma sección de código que antes: añadiremos un condicional que sólo evaluará la ventana con el \textit{SVM} si pasa el filtro del 80\% de confianza de la regresión logística. Si el \textit{SVM} también responde afirmativamente, guardaremos la ventana.
 
+                \EscaneoFiltro[label=.]{../pedestrian_detection.py}
 
+                \par
+                Comprobemos los cambios que produce esta modificación (izquierda) frente a la supresión de no máximos simple (derecha).
 
+                \begin{figure}[H]
+
+    		        \begin{center}
+
+    		        	\setlength{\fboxrule}{0pt}
+                        \fbox{
+    						\includegraphics[width=.46\textwidth]{ConLogReg-1.jpg}
+    					}
+                        \fbox{
+    						\includegraphics[width=.46\textwidth]{ConNMS-1.jpg}
+    					}
+
+                    \end{center}
+
+                \end{figure}
+                \begin{figure}[H]
+
+    		        \begin{center}
+
+                        \setlength{\fboxrule}{0pt}
+                        \fbox{
+    						\includegraphics[width=.46\textwidth]{ConLogReg-2.jpg}
+    					}
+    					\fbox{
+    						\includegraphics[width=.46\textwidth]{ConNMS-2.jpg}
+    					}
+
+                    \end{center}
+
+                \end{figure}
+                \begin{figure}[H]
+
+    		        \begin{center}
+
+                        \setlength{\fboxrule}{0pt}
+                        \fbox{
+    						\includegraphics[width=.46\textwidth]{ConLogReg-3.jpg}
+    					}
+                        \fbox{
+    						\includegraphics[width=.46\textwidth]{ConNMS-3.jpg}
+    					}
+
+                    \end{center}
+
+                \end{figure}
+                \begin{figure}[H]
+
+    		        \begin{center}
+
+                        \setlength{\fboxrule}{0pt}
+                        \fbox{
+    						\includegraphics[width=.46\textwidth]{ConLogReg-4.jpg}
+    					}
+    					\fbox{
+    						\includegraphics[width=.46\textwidth]{ConNMS-4.jpg}
+    					}
+
+    				\end{center}
+
+    			\end{figure}
+
+                \par
+                A raíz de lo que observamos, podríamos pensar que obtenemos algún tipo de mejora. No obstante, con sólo 4 imágenes no es posible afirmar con rotundidad que sea una tendencia, ni aquí ni en los cambios anteriores. Por lo tanto, en el siguiente apartado echaremos un vistazo a las matrices de confusión, que contienen información más generalizable acerca del rendimiento.
+
+            \subsubsection{Estudio de las alternativas propuestas}
+
+                \par
+                Dejando aparte la supresión de no máximos, cuya utilidad es evidente pero no influye en la calidad de la clasificación, vamos poner lado a lado las matrices de confusión del modelo original, de la alternativa por votos en mayoría simple y de la opción de incremento de umbral:
+
+                \begin{figure}[H]
+                    \begin{center}
+                        \begin{minipage}{.3\textwidth}
+            				\centering
+                            \setlength\tabcolsep{-5pt}
+                            \renewcommand\arraystretch{1.5}
+            				\begin{tabular}{c >{\bfseries}r @{\hspace{0.7em}}c @{\hspace{0.4em}}c @{\hspace{0.7em}}l}
+
+                                \multirow{10}{*}{\rotatebox{90}{\parbox{1.3cm}{\bfseries\centering Predicciones}}} &
+                                & \multicolumn{2}{c}{\bfseries Valores reales} & \\
+
+            					& & \textbf{N} & \textbf{P} \\
+
+            					& \MyOtherBox{\textbf{N}} & \MyBox{4510} & \MyBox{56} & \\[2.4em]
+
+            					& \MyOtherBox{\textbf{P}} & \MyBox{20} & \MyBox{1076} & \\
+
+            				\end{tabular}
+                            \caption{Original}
+                        \end{minipage}
+                        \hspace{0.9cm}
+                        \begin{minipage}{.3\textwidth}
+            				\centering
+                            \setlength\tabcolsep{-5pt}
+                            \renewcommand\arraystretch{1.5}
+            				\begin{tabular}{c >{\bfseries}r @{\hspace{0.7em}}c @{\hspace{0.4em}}c @{\hspace{0.7em}}l}
+
+                                \multirow{10}{*}{\rotatebox{90}{\parbox{1.3cm}{\bfseries\centering Predicciones}}} &
+                                & \multicolumn{2}{c}{\bfseries Valores reales} & \\
+
+            					& & \textbf{N} & \textbf{P} \\
+
+            					& \MyOtherBox{\textbf{N}} & \MyBox{4449} & \MyBox{22} & \\[2.4em]
+
+            					& \MyOtherBox{\textbf{P}} & \MyBox{81} & \MyBox{1110} & \\
+
+            				\end{tabular}
+                            \caption{Múltiples \textit{SVM}}
+                        \end{minipage}
+                        \vspace{0.5cm}
+
+                        \begin{minipage}{.3\textwidth}
+            				\centering
+                            \setlength\tabcolsep{-5pt}
+                            \renewcommand\arraystretch{1.5}
+            				\begin{tabular}{c >{\bfseries}r @{\hspace{0.7em}}c @{\hspace{0.4em}}c @{\hspace{0.7em}}l}
+
+                                \multirow{10}{*}{\rotatebox{90}{\parbox{1.3cm}{\bfseries\centering Predicciones}}} &
+                                & \multicolumn{2}{c}{\bfseries Valores reales} & \\
+
+            					& & \textbf{N} & \textbf{P} \\
+
+            					& \MyOtherBox{\textbf{N}} & \MyBox{4522} & \MyBox{87} & \\[2.4em]
+
+            					& \MyOtherBox{\textbf{P}} & \MyBox{8} & \MyBox{1045} & \\
+
+            				\end{tabular}
+                            \caption{Umbral de 80\%}
+                        \end{minipage}
+                    \end{center}
+                \end{figure}
+
+                \par
+                Como se puede observar, la decisión mediante \textit{SVM} simple proporciona un menor número de errores en general; si le damos la misma importancia a los dos tipos de fallos en la clasificación, éste es el modelo a usar. Sin embargo, si decidiésemos penalizar más un falso negativo, la votación de múltiples \textit{SVM} es más adecuada; de la misma forma, si quisiéramos evitar los falsos positivos, elevar el umbral como lo hemos hecho mediante una regresión logística sería nuestra elección.
+
+                \par
+                En nuestro caso, ya que no tenemos información específica acerca del contexto donde se aplicaría el modelo, vamos a elegir el que proporciona una mayor tasa de acierto, el \textit{SVM} simple.
 
 \end{document}
